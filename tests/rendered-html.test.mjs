@@ -30,11 +30,12 @@ test("server-renders the STS Tender Intelligence cockpit", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>STS Tender Intelligence<\/title>/i);
-  assert.match(html, /GeoFlow Opportunity Intelligence/);
-  assert.match(html, /Construction intelligence before tender time/);
+  assert.match(html, /GeoFlow opportunity intelligence/);
+  assert.match(html, /Business development command centre/);
+  assert.match(html, /Turn construction signals into focused, winnable pursuits/);
   assert.match(html, /Parramatta Civic Quarter towers/);
-  assert.match(html, /AI agents/);
-  assert.match(html, /Proposal automation/);
+  assert.match(html, /Intelligence operations/);
+  assert.match(html, /Evidence and verification/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Starter Project/);
 });
 
@@ -49,10 +50,11 @@ test("keeps starter-only code out of the product surface", async () => {
   assert.match(packageJson, /"name": "sts-tender-intelligence"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.match(page, /scoreOpportunity/);
-  assert.match(page, /Opportunity scoring/);
+  assert.match(page, /Decision queue/);
+  assert.match(page, /Evidence and verification/);
   assert.match(layout, /title:\s*"STS Tender Intelligence"/);
   assert.doesNotMatch(page, /_sites-preview|SkeletonPreview|codex-preview/);
   assert.doesNotMatch(layout, /_sites-preview|Starter Project|codex-preview/);
-  assert.match(css, /--accent:/);
-  assert.match(css, /@media \(max-width: 820px\)/);
+  assert.match(css, /--forest:/);
+  assert.match(css, /@media\(max-width:860px\)/);
 });

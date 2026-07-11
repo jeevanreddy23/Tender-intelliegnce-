@@ -13,6 +13,7 @@ type Opportunity = {
   client: string;
   builder: string;
   consultant: string;
+  owner: string;
   value: number;
   geotechRevenue: [number, number];
   closeDate: string;
@@ -24,8 +25,13 @@ type Opportunity = {
   winProbability: number;
   travel: number;
   resourceFit: number;
+  confidence: number;
+  lastVerified: string;
   signals: string[];
   scope: string[];
+  evidence: { title: string; source: string; age: string; confidence: string }[];
+  contacts: { initials: string; name: string; role: string; strength: string }[];
+  risks: { risk: string; response: string; level: "High" | "Medium" | "Low" }[];
   nextAction: string;
 };
 
@@ -48,6 +54,7 @@ const opportunities: Opportunity[] = [
     client: "Harbourline Developments",
     builder: "TBA",
     consultant: "Northrop",
+    owner: "M. Chen",
     value: 185000000,
     geotechRevenue: [45000, 70000],
     closeDate: "Contact window: 48 hours",
@@ -59,6 +66,8 @@ const opportunities: Opportunity[] = [
     winProbability: 72,
     travel: 88,
     resourceFit: 78,
+    confidence: 86,
+    lastVerified: "Today, 08:42",
     signals: [
       "150 apartments approved",
       "Two basement levels",
@@ -73,8 +82,22 @@ const opportunities: Opportunity[] = [
       "Pile design parameters",
       "Acid sulfate soil assessment",
     ],
-    nextAction:
-      "Send developer briefing and ask who is leading early works procurement.",
+    evidence: [
+      { title: "Determination of consent", source: "City of Parramatta", age: "2h", confidence: "Verified" },
+      { title: "Basement excavation note", source: "Planning attachment", age: "2h", confidence: "Verified" },
+      { title: "Early-works procurement signal", source: "Relationship CRM", age: "1d", confidence: "Corroborated" },
+    ],
+    contacts: [
+      { initials: "HP", name: "H. Patel", role: "Development Director", strength: "Warm" },
+      { initials: "JM", name: "J. Murray", role: "Civil lead, Northrop", strength: "Known" },
+      { initials: "MC", name: "M. Chen", role: "STS pursuit owner", strength: "Internal" },
+    ],
+    risks: [
+      { risk: "Early works consultant may be pre-aligned", response: "Use Northrop relationship to confirm procurement route.", level: "High" },
+      { risk: "Flood and groundwater scope can expand", response: "Offer staged investigation with an approval gate.", level: "Medium" },
+      { risk: "Builder appointment unknown", response: "Keep client-side brief independent of contractor assumptions.", level: "Low" },
+    ],
+    nextAction: "Send developer briefing and ask who is leading early works procurement.",
   },
   {
     id: "OP-2422",
@@ -87,6 +110,7 @@ const opportunities: Opportunity[] = [
     client: "Transport for NSW",
     builder: "Likely Fulton Hogan",
     consultant: "GHD",
+    owner: "S. Wilcox",
     value: 420000000,
     geotechRevenue: [140000, 210000],
     closeDate: "Tender forecast: Oct 2026",
@@ -98,22 +122,26 @@ const opportunities: Opportunity[] = [
     winProbability: 68,
     travel: 74,
     resourceFit: 84,
-    signals: [
-      "Bridge concept design released",
-      "Rock excavation likely",
-      "Creek crossing access constraints",
-      "Historical flood study updated",
+    confidence: 79,
+    lastVerified: "Today, 07:15",
+    signals: ["Bridge concept design released", "Rock excavation likely", "Creek crossing access constraints", "Historical flood study updated"],
+    scope: ["Rock coring", "Bridge footing investigation", "Slope stability", "Laboratory strength testing", "Instrumentation plan", "Temporary works advice"],
+    evidence: [
+      { title: "Infrastructure pipeline entry", source: "Transport for NSW", age: "6h", confidence: "Verified" },
+      { title: "Concept design issue", source: "Project document register", age: "1d", confidence: "Verified" },
+      { title: "Builder interest pattern", source: "Competitor monitor", age: "3d", confidence: "Indicative" },
     ],
-    scope: [
-      "Rock coring",
-      "Bridge footing investigation",
-      "Slope stability",
-      "Laboratory strength testing",
-      "Instrumentation plan",
-      "Temporary works advice",
+    contacts: [
+      { initials: "RS", name: "R. Singh", role: "Transport client contact", strength: "Warm" },
+      { initials: "AL", name: "A. Lee", role: "Geotechnical lead, GHD", strength: "Known" },
+      { initials: "SW", name: "S. Wilcox", role: "STS pursuit owner", strength: "Internal" },
     ],
-    nextAction:
-      "Prepare capability pack for bridge investigations and request consultant intro.",
+    risks: [
+      { risk: "Strong incumbent transport competitors", response: "Lead with constrained-access bridge investigation examples.", level: "High" },
+      { risk: "Fieldwork access window uncertain", response: "Price a mobilised crew and alternate possession plan.", level: "Medium" },
+      { risk: "Forecast timing may move", response: "Retain monthly watch and update influence plan.", level: "Low" },
+    ],
+    nextAction: "Prepare capability pack for bridge investigations and request consultant intro.",
   },
   {
     id: "OP-2427",
@@ -126,6 +154,7 @@ const opportunities: Opportunity[] = [
     client: "Axis Industrial",
     builder: "Richard Crookes Construction",
     consultant: "Arcadis",
+    owner: "M. Chen",
     value: 310000000,
     geotechRevenue: [85000, 130000],
     closeDate: "No tender yet",
@@ -137,22 +166,26 @@ const opportunities: Opportunity[] = [
     winProbability: 81,
     travel: 91,
     resourceFit: 73,
-    signals: [
-      "Developer acquired 19 ha site",
-      "Warehouse zoning uplift lodged",
-      "STS completed 3 previous sheds nearby",
-      "Likely heavy pavement program",
+    confidence: 74,
+    lastVerified: "Yesterday, 16:24",
+    signals: ["Developer acquired 19 ha site", "Warehouse zoning uplift lodged", "STS completed 3 previous sheds nearby", "Likely heavy pavement program"],
+    scope: ["DCP grid", "CBR testing", "Plate load tests", "Pavement design inputs", "Earthworks validation", "Imported fill assessment"],
+    evidence: [
+      { title: "Property transaction notice", source: "Market monitor", age: "1d", confidence: "Corroborated" },
+      { title: "Zoning uplift application", source: "NSW planning portal", age: "3d", confidence: "Verified" },
+      { title: "Nearby STS project history", source: "Relationship CRM", age: "5d", confidence: "Verified" },
     ],
-    scope: [
-      "DCP grid",
-      "CBR testing",
-      "Plate load tests",
-      "Pavement design inputs",
-      "Earthworks validation",
-      "Imported fill assessment",
+    contacts: [
+      { initials: "CB", name: "C. Brown", role: "Development Manager", strength: "Warm" },
+      { initials: "AG", name: "A. Green", role: "Project lead, Arcadis", strength: "Known" },
+      { initials: "MC", name: "M. Chen", role: "STS pursuit owner", strength: "Internal" },
     ],
-    nextAction:
-      "Ask relationship owner to book a pre-design geotech risk workshop.",
+    risks: [
+      { risk: "Design brief remains unformed", response: "Offer an early risk workshop rather than a fixed scope.", level: "Medium" },
+      { risk: "Pavement scope may be split", response: "Position STS as one ground-data source for all packages.", level: "Medium" },
+      { risk: "Land settlement dependencies", response: "Track settlement milestones through planning monitor.", level: "Low" },
+    ],
+    nextAction: "Ask relationship owner to book a pre-design geotech risk workshop.",
   },
   {
     id: "OP-2434",
@@ -165,6 +198,7 @@ const opportunities: Opportunity[] = [
     client: "Southern Grid Storage",
     builder: "TBA EPC",
     consultant: "WSP",
+    owner: "E. Dawson",
     value: 260000000,
     geotechRevenue: [60000, 95000],
     closeDate: "Planning response: Sep 2026",
@@ -176,22 +210,26 @@ const opportunities: Opportunity[] = [
     winProbability: 59,
     travel: 67,
     resourceFit: 69,
-    signals: [
-      "Substation tie-in noted",
-      "Slope stability concerns",
-      "Bushfire access upgrades",
-      "Possible shallow groundwater",
+    confidence: 71,
+    lastVerified: "Yesterday, 13:08",
+    signals: ["Substation tie-in noted", "Slope stability concerns", "Bushfire access upgrades", "Possible shallow groundwater"],
+    scope: ["Boreholes at inverter pads", "Electrical trench assessment", "Slope stability review", "Permeability tests", "Aggressivity testing", "Construction traffic pavements"],
+    evidence: [
+      { title: "EIS exhibition notice", source: "NSW major projects", age: "1d", confidence: "Verified" },
+      { title: "Geology and hazards appendix", source: "EIS attachments", age: "1d", confidence: "Verified" },
+      { title: "EPC market watch", source: "Competitor monitor", age: "4d", confidence: "Indicative" },
     ],
-    scope: [
-      "Boreholes at inverter pads",
-      "Electrical trench assessment",
-      "Slope stability review",
-      "Permeability tests",
-      "Aggressivity testing",
-      "Construction traffic pavements",
+    contacts: [
+      { initials: "ED", name: "E. Dawson", role: "STS pursuit owner", strength: "Internal" },
+      { initials: "KS", name: "K. Singh", role: "Energy lead, WSP", strength: "Cold" },
+      { initials: "MP", name: "M. Park", role: "Grid development contact", strength: "Known" },
     ],
-    nextAction:
-      "Track EPC shortlist and build renewables geotech evidence pack.",
+    risks: [
+      { risk: "EPC selection may be offshore-led", response: "Prepare a local ground-risk briefing for the asset owner.", level: "High" },
+      { risk: "Slope scope needs specialist review", response: "Line up partner capacity before outreach.", level: "Medium" },
+      { risk: "Long programme to construction", response: "Maintain a light-touch quarterly cadence.", level: "Low" },
+    ],
+    nextAction: "Track EPC shortlist and build renewables geotech evidence pack.",
   },
   {
     id: "OP-2441",
@@ -204,6 +242,7 @@ const opportunities: Opportunity[] = [
     client: "Queensland Health",
     builder: "TBA",
     consultant: "Aurecon",
+    owner: "T. Nguyen",
     value: 520000000,
     geotechRevenue: [120000, 190000],
     closeDate: "Tender forecast: Jan 2027",
@@ -215,22 +254,26 @@ const opportunities: Opportunity[] = [
     winProbability: 52,
     travel: 42,
     resourceFit: 58,
-    signals: [
-      "Capital allocation published",
-      "Clinical services plan complete",
-      "Basement and services tunnel likely",
-      "High stakeholder complexity",
+    confidence: 67,
+    lastVerified: "Yesterday, 10:11",
+    signals: ["Capital allocation published", "Clinical services plan complete", "Basement and services tunnel likely", "High stakeholder complexity"],
+    scope: ["Deep boreholes", "Groundwater monitoring", "Retention advice", "Contamination investigation", "Vibration monitoring", "Foundation options study"],
+    evidence: [
+      { title: "Capital programme allocation", source: "Queensland Health", age: "1d", confidence: "Verified" },
+      { title: "Clinical services plan", source: "Public project library", age: "7d", confidence: "Corroborated" },
+      { title: "QLD delivery capacity check", source: "STS resourcing", age: "1d", confidence: "Verified" },
     ],
-    scope: [
-      "Deep boreholes",
-      "Groundwater monitoring",
-      "Retention advice",
-      "Contamination investigation",
-      "Vibration monitoring",
-      "Foundation options study",
+    contacts: [
+      { initials: "TN", name: "T. Nguyen", role: "STS pursuit owner", strength: "Internal" },
+      { initials: "PA", name: "P. Adams", role: "Health infrastructure contact", strength: "Cold" },
+      { initials: "SL", name: "S. Lewis", role: "Project lead, Aurecon", strength: "Known" },
     ],
-    nextAction:
-      "Qualify whether QLD partner capacity is available before pursuit.",
+    risks: [
+      { risk: "Queensland delivery capability is limited", response: "Decide a delivery partner before bid influence begins.", level: "High" },
+      { risk: "Heavy incumbent consultant presence", response: "Use an early differentiator around tunnel groundwater risk.", level: "High" },
+      { risk: "Multiple approval stakeholders", response: "Map the decision chain before committing bid cost.", level: "Medium" },
+    ],
+    nextAction: "Qualify whether QLD partner capacity is available before pursuit.",
   },
   {
     id: "OP-2446",
@@ -243,6 +286,7 @@ const opportunities: Opportunity[] = [
     client: "School Infrastructure NSW",
     builder: "TBA",
     consultant: "Meinhardt",
+    owner: "R. Hall",
     value: 95000000,
     geotechRevenue: [30000, 52000],
     closeDate: "Closes 31 Jul 2026",
@@ -254,62 +298,36 @@ const opportunities: Opportunity[] = [
     winProbability: 66,
     travel: 55,
     resourceFit: 86,
-    signals: [
-      "Bundle of 7 schools",
-      "Fast turnaround required",
-      "Repeat agency scope pattern",
-      "Regional crew availability good",
+    confidence: 91,
+    lastVerified: "Today, 09:06",
+    signals: ["Bundle of 7 schools", "Fast turnaround required", "Repeat agency scope pattern", "Regional crew availability good"],
+    scope: ["Shallow boreholes", "DCP testing", "Waste classification", "Pavement CBR", "Site classification", "Short-form factual reports"],
+    evidence: [
+      { title: "Tender notice and schedules", source: "VendorPanel", age: "1h", confidence: "Verified" },
+      { title: "Conditions of tendering", source: "Tender package", age: "1h", confidence: "Verified" },
+      { title: "Comparable STS delivery history", source: "Project archive", age: "2d", confidence: "Verified" },
     ],
-    scope: [
-      "Shallow boreholes",
-      "DCP testing",
-      "Waste classification",
-      "Pavement CBR",
-      "Site classification",
-      "Short-form factual reports",
+    contacts: [
+      { initials: "RH", name: "R. Hall", role: "STS pursuit owner", strength: "Internal" },
+      { initials: "DW", name: "D. Wong", role: "Agency procurement contact", strength: "Known" },
+      { initials: "EL", name: "E. Long", role: "Regional operations lead", strength: "Internal" },
     ],
-    nextAction:
-      "Generate fixed-fee proposal with alternate schedule for simultaneous crews.",
+    risks: [
+      { risk: "Seven-site programme compression", response: "Price two simultaneous field crews and staged reporting.", level: "Medium" },
+      { risk: "Scope comparison may favour lowest price", response: "Make assumptions and delivered outputs easy to compare.", level: "Medium" },
+      { risk: "Travel costs can erode margin", response: "Lock crew plan and accommodation allowances early.", level: "Low" },
+    ],
+    nextAction: "Generate fixed-fee proposal with alternate schedule for simultaneous crews.",
   },
 ];
 
 const agents: Agent[] = [
-  {
-    name: "Tender crawler",
-    status: "Live",
-    coverage: "AusTender, VendorPanel, TenderLink, NSW Buy",
-    output: "16 new tender signals",
-  },
-  {
-    name: "Planning approval crawler",
-    status: "Live",
-    coverage: "Council DA, SSD, SSI, EIS, rezoning",
-    output: "42 approval changes",
-  },
-  {
-    name: "Developer tracker",
-    status: "Live",
-    coverage: "Land purchases, repeat clients, strategic sites",
-    output: "9 pre-tender leads",
-  },
-  {
-    name: "Document reader",
-    status: "Learning",
-    coverage: "PDF, Word, drawings, specs, BOQ",
-    output: "6 scopes extracted",
-  },
-  {
-    name: "Proposal generator",
-    status: "Queued",
-    coverage: "Methodology, assumptions, price schedule",
-    output: "3 drafts ready",
-  },
-  {
-    name: "Competitor tracker",
-    status: "Learning",
-    coverage: "SMEC, GHD, WSP, Douglas Partners, Arcadis",
-    output: "11 client overlaps",
-  },
+  { name: "Tender crawler", status: "Live", coverage: "AusTender, VendorPanel, TenderLink, NSW Buy", output: "16 new tender signals" },
+  { name: "Planning approval crawler", status: "Live", coverage: "Council DA, SSD, SSI, EIS, rezoning", output: "42 approval changes" },
+  { name: "Developer tracker", status: "Live", coverage: "Land purchases, repeat clients, strategic sites", output: "9 pre-tender leads" },
+  { name: "Document reader", status: "Learning", coverage: "PDF, Word, drawings, specs, BOQ", output: "6 scopes extracted" },
+  { name: "Proposal generator", status: "Queued", coverage: "Methodology, assumptions, price schedule", output: "3 draft packs ready" },
+  { name: "Competitor tracker", status: "Learning", coverage: "SMEC, GHD, WSP, Douglas Partners, Arcadis", output: "11 client overlaps" },
 ];
 
 const competitors = [
@@ -319,12 +337,15 @@ const competitors = [
   { name: "Douglas Partners", movement: "Sydney apartment work steady", heat: 55 },
 ];
 
+const workflow = [
+  { step: "Confirm procurement route", owner: "M. Chen", due: "Today", state: "Ready" },
+  { step: "Send ground-risk briefing", owner: "M. Chen", due: "Tomorrow", state: "Ready" },
+  { step: "Secure consultant intelligence", owner: "J. Murray", due: "15 Jul", state: "Watching" },
+  { step: "Price staged investigation", owner: "Bid team", due: "On trigger", state: "Blocked" },
+];
+
 function money(value: number) {
-  return new Intl.NumberFormat("en-AU", {
-    style: "currency",
-    currency: "AUD",
-    maximumFractionDigits: 0,
-  }).format(value);
+  return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(value);
 }
 
 function shortMoney(value: number) {
@@ -334,23 +355,10 @@ function shortMoney(value: number) {
 
 function scoreOpportunity(opportunity: Opportunity) {
   const revenue = Math.min(100, opportunity.geotechRevenue[1] / 2000);
-  const relationship = opportunity.relationship;
-  const competition = 100 - opportunity.competition;
-  const risk = 100 - opportunity.risk;
-  const probability = opportunity.winProbability;
-  const travel = opportunity.travel;
-  const resource = opportunity.resourceFit;
-  const strategic = opportunity.strategic;
-
   return Math.round(
-    revenue * 0.18 +
-      relationship * 0.16 +
-      competition * 0.12 +
-      risk * 0.1 +
-      probability * 0.18 +
-      travel * 0.08 +
-      resource * 0.08 +
-      strategic * 0.1,
+    revenue * 0.18 + opportunity.relationship * 0.16 + (100 - opportunity.competition) * 0.12 +
+      (100 - opportunity.risk) * 0.1 + opportunity.winProbability * 0.18 + opportunity.travel * 0.08 +
+      opportunity.resourceFit * 0.08 + opportunity.strategic * 0.1,
   );
 }
 
@@ -363,163 +371,98 @@ function scoreClass(score: number) {
 export default function Home() {
   const [activeId, setActiveId] = useState(opportunities[0].id);
   const [stageFilter, setStageFilter] = useState("All");
+  const [detailView, setDetailView] = useState<"intel" | "pursuit">("intel");
+  const [briefOpen, setBriefOpen] = useState(false);
+  const [proposalReady, setProposalReady] = useState(false);
 
-  const ranked = useMemo(
-    () =>
-      opportunities
-        .map((opportunity) => ({
-          ...opportunity,
-          score: scoreOpportunity(opportunity),
-        }))
-        .sort((a, b) => b.score - a.score),
-    [],
-  );
-
+  const ranked = useMemo(() => opportunities.map((opportunity) => ({ ...opportunity, score: scoreOpportunity(opportunity) })).sort((a, b) => b.score - a.score), []);
   const stages = ["All", ...Array.from(new Set(ranked.map((item) => item.stage)))];
-  const visible =
-    stageFilter === "All"
-      ? ranked
-      : ranked.filter((item) => item.stage === stageFilter);
+  const visible = stageFilter === "All" ? ranked : ranked.filter((item) => item.stage === stageFilter);
   const active = ranked.find((item) => item.id === activeId) ?? ranked[0];
-  const pipeline = ranked.reduce(
-    (total, item) => total + item.geotechRevenue[1],
-    0,
-  );
-  const predicted = ranked.filter(
-    (item) => item.stage !== "Tender open" && item.stage !== "Pre-tender notice",
-  ).length;
+  const pipeline = ranked.reduce((total, item) => total + item.geotechRevenue[1], 0);
+  const weightedPipeline = ranked.reduce((total, item) => total + item.geotechRevenue[1] * (item.winProbability / 100), 0);
+  const early = ranked.filter((item) => !["Tender open", "Pre-tender notice"].includes(item.stage)).length;
+  const highPriority = ranked.filter((item) => item.score >= 70).length;
+  const drivers = [
+    { label: "Win probability", value: active.winProbability, tone: "green" },
+    { label: "Relationship access", value: active.relationship, tone: "blue" },
+    { label: "Strategic fit", value: active.strategic, tone: "gold" },
+    { label: "Delivery readiness", value: active.resourceFit, tone: "ink" },
+    { label: "Competitive position", value: 100 - active.competition, tone: "red" },
+  ];
 
   return (
     <main className="app-shell">
       <section className="hero-band">
         <nav className="topbar" aria-label="Primary">
           <div className="brand-lockup">
-            <span className="brand-mark" aria-hidden="true">
-              STS
-            </span>
+            <span className="brand-mark" aria-hidden="true">STS</span>
             <div>
-              <p className="eyebrow">GeoFlow Opportunity Intelligence</p>
+              <p className="eyebrow">GeoFlow opportunity intelligence</p>
               <h1>STS Tender Intelligence</h1>
             </div>
           </div>
           <div className="nav-actions">
-            <button type="button">Daily Brief</button>
-            <button type="button">Generate Proposal</button>
+            <button aria-pressed={briefOpen} className={briefOpen ? "active-action" : ""} onClick={() => setBriefOpen((value) => !value)} type="button">
+              {briefOpen ? "Brief open" : "Daily brief"}
+            </button>
+            <button className="primary-action" onClick={() => setProposalReady(true)} type="button">
+              {proposalReady ? "Proposal pack ready" : "Generate proposal"}
+            </button>
           </div>
         </nav>
 
         <div className="hero-grid">
           <div className="hero-copy">
-            <p className="kicker">Construction intelligence before tender time</p>
-            <h2>
-              Predict, score, and pursue geotechnical opportunities months
-              earlier.
-            </h2>
-            <p>
-              A daily operating system for STS business development across
-              tenders, planning approvals, developers, builders, consultants,
-              competitors, and proposal readiness.
-            </p>
+            <p className="kicker">Business development command centre</p>
+            <h2>Turn construction signals into focused, winnable pursuits.</h2>
+            <p>One disciplined view of tender activity, planning movements, buyer relationships, commercial potential, delivery risk, and the next best action.</p>
           </div>
           <div className="command-panel" aria-label="Today summary">
-            <div>
-              <span>Today</span>
-              <strong>{ranked.length}</strong>
-              <small>qualified opportunities</small>
-            </div>
-            <div>
-              <span>Pipeline</span>
-              <strong>{shortMoney(pipeline)}</strong>
-              <small>potential geotech revenue</small>
-            </div>
-            <div>
-              <span>Early</span>
-              <strong>{predicted}</strong>
-              <small>pre-tender predictions</small>
-            </div>
-            <div>
-              <span>Best score</span>
-              <strong>{ranked[0].score}</strong>
-              <small>{ranked[0].name}</small>
-            </div>
+            <div><span>Qualified pipeline</span><strong>{shortMoney(pipeline)}</strong><small>upside revenue across {ranked.length} active pursuits</small></div>
+            <div><span>Weighted forecast</span><strong>{shortMoney(weightedPipeline)}</strong><small>probability-adjusted revenue</small></div>
+            <div><span>Influence window</span><strong>{early}</strong><small>opportunities before formal tender</small></div>
+            <div><span>Priority today</span><strong>{highPriority}</strong><small>pursuits scoring 70 or above</small></div>
           </div>
         </div>
       </section>
 
+      {briefOpen && (
+        <section className="brief-strip" aria-label="Daily brief">
+          <div><span className="brief-label">Daily brief</span><strong>Two fresh planning approvals, one tender close inside 20 days, and three relationship-led actions ready for owners.</strong></div>
+          <span className="brief-time">Prepared 09:15 AEST</span>
+        </section>
+      )}
+
       <section className="workspace-grid" aria-label="Opportunity workspace">
         <aside className="left-rail" aria-label="Intelligence filters">
           <div className="panel">
-            <div className="section-heading">
-              <span>Monitor</span>
-              <strong>Source coverage</strong>
-            </div>
-            {[
-              "Government tenders",
-              "Planning approvals",
-              "Developer activity",
-              "Private portals",
-              "Competitor movement",
-              "Relationship CRM",
-            ].map((item) => (
-              <label className="check-row" key={item}>
-                <input type="checkbox" defaultChecked />
-                <span>{item}</span>
-              </label>
+            <div className="section-heading"><span>Signal coverage</span><strong>Monitored sources</strong></div>
+            {["Government tenders", "Planning approvals", "Developer activity", "Private portals", "Competitor movement", "Relationship CRM"].map((item) => (
+              <label className="check-row" key={item}><input defaultChecked suppressHydrationWarning type="checkbox" /><span>{item}</span><small>Live</small></label>
             ))}
           </div>
-
           <div className="panel">
-            <div className="section-heading">
-              <span>Stage</span>
-              <strong>Pipeline lens</strong>
-            </div>
-            <div className="stage-list">
-              {stages.map((stage) => (
-                <button
-                  className={stage === stageFilter ? "active" : ""}
-                  key={stage}
-                  onClick={() => setStageFilter(stage)}
-                  type="button"
-                >
-                  {stage}
-                </button>
-              ))}
-            </div>
+            <div className="section-heading"><span>Pipeline lens</span><strong>Stage</strong></div>
+            <div className="stage-list">{stages.map((stage) => <button className={stage === stageFilter ? "active" : ""} key={stage} onClick={() => setStageFilter(stage)} type="button">{stage}<span>{stage === "All" ? ranked.length : ranked.filter((item) => item.stage === stage).length}</span></button>)}</div>
+          </div>
+          <div className="panel cadence-panel">
+            <span className="eyebrow">Cadence</span><strong>Next intelligence refresh</strong><b>01h 44m</b><p>Source monitors run continuously. Relationship and proposal signals are reviewed at 16:00.</p>
           </div>
         </aside>
 
         <section className="opportunity-board" aria-label="Ranked opportunities">
           <div className="board-header">
-            <div>
-              <p className="eyebrow">Opportunity scoring</p>
-              <h3>Ranked pursuit queue</h3>
-            </div>
+            <div><p className="eyebrow">Decision queue</p><h3>Ranked pursuit opportunities</h3><p className="board-description">Scores combine revenue, win probability, relationship access, competition, delivery fit, risk, and strategic value.</p></div>
             <span>{visible.length} shown</span>
           </div>
-
+          <div className="queue-head"><span>Score</span><span>Opportunity</span><span>Value / timing</span></div>
           <div className="opportunity-list">
             {visible.map((item) => (
-              <button
-                className={`opportunity-row ${
-                  item.id === active.id ? "selected" : ""
-                }`}
-                key={item.id}
-                onClick={() => setActiveId(item.id)}
-                type="button"
-              >
-                <span className={`score-pill ${scoreClass(item.score)}`}>
-                  {item.score}
-                </span>
-                <span className="opportunity-main">
-                  <strong>{item.name}</strong>
-                  <small>
-                    {item.location} - {item.stage} - {item.source}
-                  </small>
-                </span>
-                <span className="revenue-range">
-                  {shortMoney(item.geotechRevenue[0])}-
-                  {shortMoney(item.geotechRevenue[1])}
-                </span>
+              <button className={`opportunity-row ${item.id === active.id ? "selected" : ""}`} key={item.id} onClick={() => { setActiveId(item.id); setDetailView("intel"); }} type="button">
+                <span className={`score-pill ${scoreClass(item.score)}`}>{item.score}<small>fit</small></span>
+                <span className="opportunity-main"><strong>{item.name}</strong><small>{item.location} <i>•</i> {item.stage}</small><em>{item.sector} <i>•</i> {item.source}</em></span>
+                <span className="revenue-range"><strong>{shortMoney(item.geotechRevenue[0])}-{shortMoney(item.geotechRevenue[1])}</strong><small>{item.closeDate}</small></span>
               </button>
             ))}
           </div>
@@ -527,142 +470,62 @@ export default function Home() {
 
         <aside className="detail-panel" aria-label="Selected opportunity detail">
           <div className="detail-title">
-            <span>{active.id}</span>
+            <div className="detail-meta"><span>{active.id}</span><b>{active.confidence}% confidence</b></div>
             <h3>{active.name}</h3>
-            <p>{active.nextAction}</p>
+            <p>{active.location} <i>•</i> last verified {active.lastVerified}</p>
           </div>
-
-          <div className="metric-grid">
-            <div>
-              <span>Project value</span>
-              <strong>{money(active.value)}</strong>
-            </div>
-            <div>
-              <span>STS revenue</span>
-              <strong>
-                {shortMoney(active.geotechRevenue[0])}-
-                {shortMoney(active.geotechRevenue[1])}
-              </strong>
-            </div>
-            <div>
-              <span>Win probability</span>
-              <strong>{active.winProbability}%</strong>
-            </div>
-            <div>
-              <span>Start</span>
-              <strong>{active.constructionStart}</strong>
-            </div>
+          <div className="detail-tabs" role="tablist" aria-label="Opportunity detail view">
+            <button aria-selected={detailView === "intel"} className={detailView === "intel" ? "selected" : ""} onClick={() => setDetailView("intel")} role="tab" type="button">Intelligence</button>
+            <button aria-selected={detailView === "pursuit"} className={detailView === "pursuit" ? "selected" : ""} onClick={() => setDetailView("pursuit")} role="tab" type="button">Pursuit plan</button>
           </div>
-
-          <div className="info-stack">
-            <div>
-              <span>Client</span>
-              <strong>{active.client}</strong>
-            </div>
-            <div>
-              <span>Builder</span>
-              <strong>{active.builder}</strong>
-            </div>
-            <div>
-              <span>Consultant</span>
-              <strong>{active.consultant}</strong>
-            </div>
-            <div>
-              <span>Timing</span>
-              <strong>{active.closeDate}</strong>
-            </div>
-          </div>
-
-          <div className="split-panel">
-            <div>
-              <h4>Detected signals</h4>
-              <ul>
-                {active.signals.map((signal) => (
-                  <li key={signal}>{signal}</li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h4>Likely geotech scope</h4>
-              <ul>
-                {active.scope.map((scope) => (
-                  <li key={scope}>{scope}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          {detailView === "intel" ? (
+            <>
+              <div className="metric-grid">
+                <div><span>Project value</span><strong>{money(active.value)}</strong></div>
+                <div><span>STS revenue</span><strong>{shortMoney(active.geotechRevenue[0])}-{shortMoney(active.geotechRevenue[1])}</strong></div>
+                <div><span>Win probability</span><strong>{active.winProbability}%</strong></div>
+                <div><span>Construction start</span><strong>{active.constructionStart}</strong></div>
+              </div>
+              <div className="info-stack">
+                <div><span>Client</span><strong>{active.client}</strong></div><div><span>Builder</span><strong>{active.builder}</strong></div><div><span>Consultant</span><strong>{active.consultant}</strong></div><div><span>Pursuit owner</span><strong>{active.owner}</strong></div>
+              </div>
+              <div className="recommendation"><span>Recommended next move</span><p>{active.nextAction}</p><small>Timing: {active.closeDate}</small></div>
+            </>
+          ) : (
+            <>
+              <div className="strategy-callout"><span>Win theme</span><strong>De-risk programme early with a practical, staged ground investigation.</strong><p>Lead with fast mobilisation, clear groundwater contingencies, and relevant local delivery evidence.</p></div>
+              <div className="workflow-list">{workflow.map((item) => <div className="workflow-row" key={item.step}><span className={`workflow-state ${item.state.toLowerCase()}`}>{item.state}</span><div><strong>{item.step}</strong><small>{item.owner} <i>•</i> {item.due}</small></div></div>)}</div>
+              {proposalReady && <div className="proposal-ready">Proposal pack assembled for this pursuit. Review assumptions before release.</div>}
+            </>
+          )}
         </aside>
       </section>
 
+      <section className="intelligence-grid" aria-label="Pursuit intelligence">
+        <section className="panel score-panel">
+          <div className="section-heading"><div><span>Why this ranks here</span><strong>Score drivers</strong></div><b>{active.score}/100</b></div>
+          <p className="panel-intro">The model favours opportunities with near-term commercial value and a credible route to influence.</p>
+          <div className="driver-list">{drivers.map((driver) => <div className="driver-row" key={driver.label}><span>{driver.label}</span><div className="progress-track"><i className={driver.tone} style={{ width: `${driver.value}%` }} /></div><b>{driver.value}</b></div>)}</div>
+          <div className="signal-scope"><div><h4>Detected signals</h4><ul>{active.signals.map((signal) => <li key={signal}>{signal}</li>)}</ul></div><div><h4>Likely geotech scope</h4><ul>{active.scope.map((scope) => <li key={scope}>{scope}</li>)}</ul></div></div>
+        </section>
+
+        <section className="panel evidence-panel">
+          <div className="section-heading"><div><span>Research trail</span><strong>Evidence and verification</strong></div><b>{active.confidence}%</b></div>
+          <div className="evidence-list">{active.evidence.map((item) => <div className="evidence-row" key={item.title}><div><strong>{item.title}</strong><small>{item.source} <i>•</i> {item.age} ago</small></div><span className={item.confidence.toLowerCase()}>{item.confidence}</span></div>)}</div>
+          <div className="source-note">Every pursuit should carry a traceable research trail. Confirmed sources lift confidence; indicative signals stay visible but do not drive procurement assumptions alone.</div>
+        </section>
+
+        <section className="panel relationship-panel">
+          <div className="section-heading"><div><span>Influence map</span><strong>People and access</strong></div><b>{active.relationship}/100</b></div>
+          <div className="contact-list">{active.contacts.map((contact) => <div className="contact-row" key={contact.name}><span className="initials">{contact.initials}</span><div><strong>{contact.name}</strong><small>{contact.role}</small></div><em>{contact.strength}</em></div>)}</div>
+          <div className="relationship-foot"><span>Relationship posture</span><strong>{active.relationship >= 65 ? "Actively influence" : active.relationship >= 50 ? "Develop access" : "Create entry point"}</strong></div>
+        </section>
+      </section>
+
       <section className="lower-grid" aria-label="Operations intelligence">
-        <div className="panel agent-panel">
-          <div className="board-header">
-            <div>
-              <p className="eyebrow">AI agents</p>
-              <h3>Continuous collection and reasoning</h3>
-            </div>
-          </div>
-          <div className="agent-grid">
-            {agents.map((agent) => (
-              <div className="agent-card" key={agent.name}>
-                <span className={`agent-status ${agent.status.toLowerCase()}`}>
-                  {agent.status}
-                </span>
-                <strong>{agent.name}</strong>
-                <p>{agent.coverage}</p>
-                <small>{agent.output}</small>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="panel proposal-panel">
-          <div className="section-heading">
-            <span>Proposal automation</span>
-            <strong>Draft pack for selected lead</strong>
-          </div>
-          <div className="proposal-grid">
-            {[
-              "Technical methodology",
-              "Investigation schedule",
-              "Assumptions and exclusions",
-              "Risk register",
-              "Relevant past projects",
-              "Pricing schedule",
-            ].map((item) => (
-              <label className="check-row" key={item}>
-                <input type="checkbox" defaultChecked />
-                <span>{item}</span>
-              </label>
-            ))}
-          </div>
-          <div className="draft-box">
-            <span>Generated opening</span>
-            <p>
-              STS Geotechnics can support {active.client} with a targeted
-              investigation for {active.name}, prioritising early ground risk,
-              foundation parameters, construction access, and programme certainty.
-            </p>
-          </div>
-        </div>
-
-        <div className="panel competitor-panel">
-          <div className="section-heading">
-            <span>Competitor intelligence</span>
-            <strong>Market heat</strong>
-          </div>
-          {competitors.map((competitor) => (
-            <div className="heat-row" key={competitor.name}>
-              <div>
-                <strong>{competitor.name}</strong>
-                <span>{competitor.movement}</span>
-              </div>
-              <meter min="0" max="100" value={competitor.heat}>
-                {competitor.heat}
-              </meter>
-            </div>
-          ))}
-        </div>
+        <div className="panel agent-panel"><div className="board-header"><div><p className="eyebrow">Intelligence operations</p><h3>Collection and reasoning agents</h3></div><span>6 active</span></div><div className="agent-grid">{agents.map((agent) => <div className="agent-card" key={agent.name}><span className={`agent-status ${agent.status.toLowerCase()}`}>{agent.status}</span><strong>{agent.name}</strong><p>{agent.coverage}</p><small>{agent.output}</small></div>)}</div></div>
+        <div className="panel risk-panel"><div className="section-heading"><div><span>Bid discipline</span><strong>Risks to manage</strong></div></div><div className="risk-list">{active.risks.map((item) => <div className="risk-row" key={item.risk}><span className={item.level.toLowerCase()}>{item.level}</span><div><strong>{item.risk}</strong><p>{item.response}</p></div></div>)}</div></div>
+        <div className="panel competitor-panel"><div className="section-heading"><div><span>Competitor intelligence</span><strong>Market heat</strong></div></div>{competitors.map((competitor) => <div className="heat-row" key={competitor.name}><div><strong>{competitor.name}</strong><span>{competitor.movement}</span></div><meter min="0" max="100" value={competitor.heat}>{competitor.heat}</meter></div>)}</div>
       </section>
     </main>
   );
