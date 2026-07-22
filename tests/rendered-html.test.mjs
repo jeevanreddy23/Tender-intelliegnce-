@@ -23,17 +23,19 @@ async function render() {
   );
 }
 
-test("server-renders the STS Tender Intelligence cockpit", async () => {
+test("server-renders the Australia Opportunity Radar cockpit", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
-  assert.match(html, /<title>STS Tender Intelligence<\/title>/i);
+  assert.match(html, /<title>Australia Opportunity Radar<\/title>/i);
   assert.match(html, /GeoFlow opportunity intelligence/);
-  assert.match(html, /Business development command centre/);
-  assert.match(html, /Turn construction signals into focused, winnable pursuits/);
+  assert.match(html, /NSW construction and professional services radar/);
+  assert.match(html, /Find Australian work before it becomes an obvious tender/);
   assert.match(html, /Parramatta Civic Quarter towers/);
+  assert.match(html, /Commercial signal thread/);
+  assert.match(html, /Strategic fit/);
   assert.match(html, /Intelligence operations/);
   assert.match(html, /Evidence and verification/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Starter Project/);
@@ -52,7 +54,7 @@ test("keeps starter-only code out of the product surface", async () => {
   assert.match(page, /scoreOpportunity/);
   assert.match(page, /Decision queue/);
   assert.match(page, /Evidence and verification/);
-  assert.match(layout, /title:\s*"STS Tender Intelligence"/);
+  assert.match(layout, /title:\s*"Australia Opportunity Radar"/);
   assert.doesNotMatch(page, /_sites-preview|SkeletonPreview|codex-preview/);
   assert.doesNotMatch(layout, /_sites-preview|Starter Project|codex-preview/);
   assert.match(css, /--forest:/);

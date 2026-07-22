@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 
+import type { AustraliaOpportunity, Jurisdiction, OpportunityStage, OpportunityType } from "../src/opportunity/schema";
+import { scoreOpportunity as calculateOpportunityScore } from "../src/opportunity/scoring";
+
 type Opportunity = {
   id: string;
   name: string;
@@ -33,6 +36,10 @@ type Opportunity = {
   contacts: { initials: string; name: string; role: string; strength: string }[];
   risks: { risk: string; response: string; level: "High" | "Medium" | "Low" }[];
   nextAction: string;
+  sourceUrl?: string;
+  opportunityType?: OpportunityType;
+  jurisdiction?: Jurisdiction;
+  normalizedStage?: OpportunityStage;
 };
 
 type Agent = {
@@ -321,6 +328,62 @@ const opportunities: Opportunity[] = [
   },
 ];
 
+const stageMap: Record<string, OpportunityStage> = {
+  "DA approved": "planning",
+  "Pre-tender notice": "pre-procurement",
+  "Land acquisition": "signal",
+  "EIS exhibition": "planning",
+  "Budget allocation": "funding",
+  "Tender open": "open",
+};
+
+const opportunityTypeMap: Record<string, OpportunityType> = {
+  "Council planning portal": "planning-application",
+  "Transport NSW pipeline": "project-pipeline",
+  "Property transaction monitor": "private-project",
+  "Major projects portal": "planning-application",
+  "Health infrastructure capital works": "project-pipeline",
+  VendorPanel: "tender",
+};
+
+const sourceUrlMap: Record<string, string> = {
+  "Council planning portal": "https://www.planningportal.nsw.gov.au/",
+  "Transport NSW pipeline": "https://www.transport.nsw.gov.au/projects",
+  "Property transaction monitor": "https://www.planningportal.nsw.gov.au/",
+  "Major projects portal": "https://www.planningportal.nsw.gov.au/major-projects",
+  "Health infrastructure capital works": "https://www.infrastructure.nsw.gov.au/",
+  VendorPanel: "https://www.vendorpanel.com.au/",
+};
+
+const normalizedOpportunities: AustraliaOpportunity[] = opportunities.map((item) => ({
+  id: item.id,
+  sourceName: item.source,
+  sourceUrl: sourceUrlMap[item.source] ?? "https://www.nsw.gov.au/",
+  title: item.name,
+  description: `${item.name} is a ${item.sector.toLowerCase()} opportunity in ${item.location}.`,
+  opportunityType: opportunityTypeMap[item.source] ?? "private-project",
+  jurisdiction: item.state as Jurisdiction,
+  locations: [{ state: item.state, suburb: item.location.split(",")[0] }],
+  buyer: item.client,
+  principalContractor: item.builder === "TBA" ? undefined : item.builder,
+  sectors: [item.sector],
+  categories: item.scope.slice(0, 3),
+  keywords: item.signals,
+  expectedConstructionAt: item.constructionStart,
+  estimatedValueMin: item.value,
+  estimatedValueMax: item.value,
+  currency: "AUD",
+  stage: stageMap[item.stage] ?? "signal",
+  documents: item.evidence.map((evidence) => ({ title: evidence.title, url: sourceUrlMap[item.source] ?? "https://www.nsw.gov.au/" })),
+  provenance: {
+    fetchedAt: "2026-07-22T09:15:00+10:00",
+    extractionMethod: "manual",
+    confidence: item.confidence,
+    accessMethod: "public source snapshot",
+    termsChecked: true,
+  },
+}));
+
 const agents: Agent[] = [
   { name: "Tender crawler", status: "Live", coverage: "AusTender, VendorPanel, TenderLink, NSW Buy", output: "16 new tender signals" },
   { name: "Planning approval crawler", status: "Live", coverage: "Council DA, SSD, SSI, EIS, rezoning", output: "42 approval changes" },
@@ -353,13 +416,22 @@ function shortMoney(value: number) {
   return `$${Math.round(value / 1000)}k`;
 }
 
+function timingScore(opportunity: Opportunity) {
+  if (["Land acquisition", "Budget allocation"].includes(opportunity.stage)) return 92;
+  if (["DA approved", "EIS exhibition"].includes(opportunity.stage)) return 84;
+  if (opportunity.stage === "Pre-tender notice") return 76;
+  return 62;
+}
+
 function scoreOpportunity(opportunity: Opportunity) {
-  const revenue = Math.min(100, opportunity.geotechRevenue[1] / 2000);
-  return Math.round(
-    revenue * 0.18 + opportunity.relationship * 0.16 + (100 - opportunity.competition) * 0.12 +
-      (100 - opportunity.risk) * 0.1 + opportunity.winProbability * 0.18 + opportunity.travel * 0.08 +
-      opportunity.resourceFit * 0.08 + opportunity.strategic * 0.1,
-  );
+  return calculateOpportunityScore({
+    strategicFit: opportunity.strategic,
+    winProbability: opportunity.winProbability,
+    revenuePotential: Math.min(100, opportunity.geotechRevenue[1] / 2000),
+    timing: timingScore(opportunity),
+    relationshipPathway: opportunity.relationship,
+    evidenceConfidence: opportunity.confidence,
+  });
 }
 
 function scoreClass(score: number) {
@@ -375,21 +447,29 @@ export default function Home() {
   const [briefOpen, setBriefOpen] = useState(false);
   const [proposalReady, setProposalReady] = useState(false);
 
-  const ranked = useMemo(() => opportunities.map((opportunity) => ({ ...opportunity, score: scoreOpportunity(opportunity) })).sort((a, b) => b.score - a.score), []);
+  const ranked = useMemo(() => opportunities.map((opportunity) => {
+    const assessment = scoreOpportunity(opportunity);
+    return { ...opportunity, assessment, score: assessment.overall };
+  }).sort((a, b) => b.score - a.score), []);
   const stages = ["All", ...Array.from(new Set(ranked.map((item) => item.stage)))];
   const visible = stageFilter === "All" ? ranked : ranked.filter((item) => item.stage === stageFilter);
   const active = ranked.find((item) => item.id === activeId) ?? ranked[0];
-  const pipeline = ranked.reduce((total, item) => total + item.geotechRevenue[1], 0);
   const weightedPipeline = ranked.reduce((total, item) => total + item.geotechRevenue[1] * (item.winProbability / 100), 0);
   const early = ranked.filter((item) => !["Tender open", "Pre-tender notice"].includes(item.stage)).length;
   const highPriority = ranked.filter((item) => item.score >= 70).length;
   const drivers = [
-    { label: "Win probability", value: active.winProbability, tone: "green" },
-    { label: "Relationship access", value: active.relationship, tone: "blue" },
-    { label: "Strategic fit", value: active.strategic, tone: "gold" },
-    { label: "Delivery readiness", value: active.resourceFit, tone: "ink" },
-    { label: "Competitive position", value: 100 - active.competition, tone: "red" },
+    { label: "Strategic fit", value: active.assessment.strategicFit, weight: "30%", tone: "gold" },
+    { label: "Win probability", value: active.assessment.winProbability, weight: "20%", tone: "green" },
+    { label: "Revenue potential", value: active.assessment.revenuePotential, weight: "15%", tone: "ink" },
+    { label: "Timing", value: active.assessment.timing, weight: "15%", tone: "blue" },
+    { label: "Relationship pathway", value: active.assessment.relationshipPathway, weight: "10%", tone: "red" },
+    { label: "Evidence confidence", value: active.assessment.evidenceConfidence, weight: "10%", tone: "green" },
   ];
+  const signalChain = active.signals.slice(0, 4).map((signal, index) => ({
+    label: ["Funding / intent", "Planning / approval", "Procurement route", "Delivery pathway"][index],
+    signal,
+    state: index === active.signals.slice(0, 4).length - 1 ? "Current" : "Verified",
+  }));
 
   return (
     <main className="app-shell">
@@ -399,7 +479,7 @@ export default function Home() {
             <span className="brand-mark" aria-hidden="true">STS</span>
             <div>
               <p className="eyebrow">GeoFlow opportunity intelligence</p>
-              <h1>STS Tender Intelligence</h1>
+              <h1>Australia Opportunity Radar</h1>
             </div>
           </div>
           <div className="nav-actions">
@@ -414,14 +494,14 @@ export default function Home() {
 
         <div className="hero-grid">
           <div className="hero-copy">
-            <p className="kicker">Business development command centre</p>
-            <h2>Turn construction signals into focused, winnable pursuits.</h2>
-            <p>One disciplined view of tender activity, planning movements, buyer relationships, commercial potential, delivery risk, and the next best action.</p>
+            <p className="kicker">NSW construction and professional services radar</p>
+            <h2>Find Australian work before it becomes an obvious tender.</h2>
+            <p>Link planning, funding, procurement, buyer, and contractor signals into one commercial project thread — then give each pursuit a next action.</p>
           </div>
           <div className="command-panel" aria-label="Today summary">
-            <div><span>Qualified pipeline</span><strong>{shortMoney(pipeline)}</strong><small>upside revenue across {ranked.length} active pursuits</small></div>
-            <div><span>Weighted forecast</span><strong>{shortMoney(weightedPipeline)}</strong><small>probability-adjusted revenue</small></div>
-            <div><span>Influence window</span><strong>{early}</strong><small>opportunities before formal tender</small></div>
+            <div><span>Live opportunities</span><strong>{normalizedOpportunities.length}</strong><small>normalised records in the NSW slice</small></div>
+            <div><span>Weighted forecast</span><strong>{shortMoney(weightedPipeline)}</strong><small>probability-adjusted STS revenue</small></div>
+            <div><span>Early signal projects</span><strong>{early}</strong><small>before a formal tender appears</small></div>
             <div><span>Priority today</span><strong>{highPriority}</strong><small>pursuits scoring 70 or above</small></div>
           </div>
         </div>
@@ -429,7 +509,7 @@ export default function Home() {
 
       {briefOpen && (
         <section className="brief-strip" aria-label="Daily brief">
-          <div><span className="brief-label">Daily brief</span><strong>Two fresh planning approvals, one tender close inside 20 days, and three relationship-led actions ready for owners.</strong></div>
+              <div><span className="brief-label">Daily brief</span><strong>Two planning movements, one open tender, and three relationship-led actions ready for owners.</strong></div>
           <span className="brief-time">Prepared 09:15 AEST</span>
         </section>
       )}
@@ -438,8 +518,8 @@ export default function Home() {
         <aside className="left-rail" aria-label="Intelligence filters">
           <div className="panel">
             <div className="section-heading"><span>Signal coverage</span><strong>Monitored sources</strong></div>
-            {["Government tenders", "Planning approvals", "Developer activity", "Private portals", "Competitor movement", "Relationship CRM"].map((item) => (
-              <label className="check-row" key={item}><input defaultChecked suppressHydrationWarning type="checkbox" /><span>{item}</span><small>Live</small></label>
+            {["Government tenders", "Planning approvals", "Infrastructure pipelines", "Developer activity", "Private projects", "Relationship CRM"].map((item) => (
+              <label className="check-row" key={item}><input defaultChecked suppressHydrationWarning type="checkbox" /><span>{item}</span><small>Public</small></label>
             ))}
           </div>
           <div className="panel">
@@ -453,7 +533,7 @@ export default function Home() {
 
         <section className="opportunity-board" aria-label="Ranked opportunities">
           <div className="board-header">
-            <div><p className="eyebrow">Decision queue</p><h3>Ranked pursuit opportunities</h3><p className="board-description">Scores combine revenue, win probability, relationship access, competition, delivery fit, risk, and strategic value.</p></div>
+            <div><p className="eyebrow">Decision queue</p><h3>Ranked opportunity records</h3><p className="board-description">Transparent scoring combines strategic fit, win probability, revenue, timing, relationship pathway, and evidence confidence.</p></div>
             <span>{visible.length} shown</span>
           </div>
           <div className="queue-head"><span>Score</span><span>Opportunity</span><span>Value / timing</span></div>
@@ -461,7 +541,7 @@ export default function Home() {
             {visible.map((item) => (
               <button className={`opportunity-row ${item.id === active.id ? "selected" : ""}`} key={item.id} onClick={() => { setActiveId(item.id); setDetailView("intel"); }} type="button">
                 <span className={`score-pill ${scoreClass(item.score)}`}>{item.score}<small>fit</small></span>
-                <span className="opportunity-main"><strong>{item.name}</strong><small>{item.location} <i>•</i> {item.stage}</small><em>{item.sector} <i>•</i> {item.source}</em></span>
+                <span className="opportunity-main"><strong>{item.name}</strong><small>{item.location} <i>•</i> {item.stage} <i>•</i> {item.opportunityType ?? "project signal"}</small><em>{item.sector} <i>•</i> {item.source}</em></span>
                 <span className="revenue-range"><strong>{shortMoney(item.geotechRevenue[0])}-{shortMoney(item.geotechRevenue[1])}</strong><small>{item.closeDate}</small></span>
               </button>
             ))}
@@ -470,9 +550,9 @@ export default function Home() {
 
         <aside className="detail-panel" aria-label="Selected opportunity detail">
           <div className="detail-title">
-            <div className="detail-meta"><span>{active.id}</span><b>{active.confidence}% confidence</b></div>
+            <div className="detail-meta"><span>{active.id} <i>•</i> {active.opportunityType ?? "opportunity"}</span><b>{active.confidence}% confidence</b></div>
             <h3>{active.name}</h3>
-            <p>{active.location} <i>•</i> last verified {active.lastVerified}</p>
+            <p>{active.location} <i>•</i> {active.source} <i>•</i> last verified {active.lastVerified}</p>
           </div>
           <div className="detail-tabs" role="tablist" aria-label="Opportunity detail view">
             <button aria-selected={detailView === "intel"} className={detailView === "intel" ? "selected" : ""} onClick={() => setDetailView("intel")} role="tab" type="button">Intelligence</button>
@@ -489,7 +569,7 @@ export default function Home() {
               <div className="info-stack">
                 <div><span>Client</span><strong>{active.client}</strong></div><div><span>Builder</span><strong>{active.builder}</strong></div><div><span>Consultant</span><strong>{active.consultant}</strong></div><div><span>Pursuit owner</span><strong>{active.owner}</strong></div>
               </div>
-              <div className="recommendation"><span>Recommended next move</span><p>{active.nextAction}</p><small>Timing: {active.closeDate}</small></div>
+              <div className="recommendation"><span>Recommended next move</span><p>{active.nextAction}</p><small>Timing: {active.closeDate} <i>•</i> source fields remain un-inferred</small></div>
             </>
           ) : (
             <>
@@ -504,8 +584,8 @@ export default function Home() {
       <section className="intelligence-grid" aria-label="Pursuit intelligence">
         <section className="panel score-panel">
           <div className="section-heading"><div><span>Why this ranks here</span><strong>Score drivers</strong></div><b>{active.score}/100</b></div>
-          <p className="panel-intro">The model favours opportunities with near-term commercial value and a credible route to influence.</p>
-          <div className="driver-list">{drivers.map((driver) => <div className="driver-row" key={driver.label}><span>{driver.label}</span><div className="progress-track"><i className={driver.tone} style={{ width: `${driver.value}%` }} /></div><b>{driver.value}</b></div>)}</div>
+          <p className="panel-intro">A transparent six-part model. Missing dates, values, buyers, and requirements remain missing rather than being invented.</p>
+          <div className="driver-list">{drivers.map((driver) => <div className="driver-row" key={driver.label}><span>{driver.label}<small>{driver.weight}</small></span><div className="progress-track"><i className={driver.tone} style={{ width: `${driver.value}%` }} /></div><b>{driver.value}</b></div>)}</div>
           <div className="signal-scope"><div><h4>Detected signals</h4><ul>{active.signals.map((signal) => <li key={signal}>{signal}</li>)}</ul></div><div><h4>Likely geotech scope</h4><ul>{active.scope.map((scope) => <li key={scope}>{scope}</li>)}</ul></div></div>
         </section>
 
@@ -520,6 +600,14 @@ export default function Home() {
           <div className="contact-list">{active.contacts.map((contact) => <div className="contact-row" key={contact.name}><span className="initials">{contact.initials}</span><div><strong>{contact.name}</strong><small>{contact.role}</small></div><em>{contact.strength}</em></div>)}</div>
           <div className="relationship-foot"><span>Relationship posture</span><strong>{active.relationship >= 65 ? "Actively influence" : active.relationship >= 50 ? "Develop access" : "Create entry point"}</strong></div>
         </section>
+      </section>
+
+      <section className="signal-thread panel" aria-label="Commercial project signal chain">
+        <div className="board-header"><div><p className="eyebrow">Project correlation</p><h3>Commercial signal thread</h3><p className="board-description">Fragmented signals are grouped as one project so the team can act before the formal tender.</p></div><span>{active.stage}</span></div>
+        <div className="signal-chain">
+          {signalChain.map((item, index) => <div className="signal-node" key={`${item.label}-${item.signal}`}><div className="signal-node-top"><span>{String(index + 1).padStart(2, "0")}</span><em>{item.state}</em></div><strong>{item.label}</strong><p>{item.signal}</p>{index < signalChain.length - 1 && <i className="signal-arrow" aria-hidden="true">→</i>}</div>)}
+        </div>
+        <div className="thread-action"><span>Recommended pathway</span><strong>{active.nextAction}</strong><small>Source: {active.source} · {active.confidence}% evidence confidence · {active.lastVerified}</small></div>
       </section>
 
       <section className="lower-grid" aria-label="Operations intelligence">
