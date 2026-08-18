@@ -49,6 +49,33 @@ npm run deploy
 The production Worker is available at
 <https://sts-tender-intelligence.poreddyjeevanreddy.workers.dev>.
 
+## Historical Award Dataset
+
+The data pipeline builds a provenance-first master dataset from Commonwealth
+AusTender awards and the NSW eTendering archive. Current buy NSW awards are
+ingested from official Notice Report CSV exports because the legacy public API
+was retired when the Register of notices replaced eTendering.
+
+```bash
+# Existing Commonwealth collector, resumable by publication day
+npm run collect:austender -- --start=2016-08-19 --end=2026-08-19
+
+# NSW Treasury archive preserved by the Open Contracting Data Registry
+npm run collect:nsw:historical -- --start=2016-08-19 --end=2026-08-19
+
+# Optional current buy NSW Notice Report exports
+npm run import:nsw:reports -- --input="downloads/notices-2025.csv;downloads/notices-2026.csv"
+
+# CSV, NDJSON, Parquet, RAG corpus, supplier summary, and quality report
+npm run build:historical-dataset
+npm run validate:historical-dataset
+```
+
+Generated files are written under `data/historical-geotech/` and excluded from
+Git. Every record retains its source portal, URL, source identifier, collection
+timestamp, and extraction method. Geotechnical relevance is calculated across
+title, scope, item descriptions, and category rather than title alone.
+
 ## Next Iterations
 
 1. Connect live source adapters for AusTender, NSW Buy, VendorPanel, council DA
