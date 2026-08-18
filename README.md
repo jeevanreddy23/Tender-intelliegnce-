@@ -34,6 +34,21 @@ npm test
 The app runs on the vinext/Next.js starter used by OpenAI Sites and is prepared
 for a future Cloudflare Worker-compatible deployment.
 
+## Cloudflare Deployment
+
+The application deploys as a Cloudflare Worker with static assets through the
+Cloudflare Vite plugin. Authenticate Wrangler once, then preview or deploy the
+production build:
+
+```bash
+npx wrangler login
+npm run preview
+npm run deploy
+```
+
+The production Worker is available at
+<https://sts-tender-intelligence.poreddyjeevanreddy.workers.dev>.
+
 ## Next Iterations
 
 1. Connect live source adapters for AusTender, NSW Buy, VendorPanel, council DA
