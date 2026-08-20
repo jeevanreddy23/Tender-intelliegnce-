@@ -40,4 +40,3 @@ test("uses search-result metadata without fetching profile pages", async () => {
   assert.equal(results.length, 1);
   assert.equal(results[0].profileUrl, "https://au.linkedin.com/in/a-person");
 });
-
