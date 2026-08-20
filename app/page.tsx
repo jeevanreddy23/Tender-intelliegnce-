@@ -2,8 +2,12 @@
 
 import { useMemo, useState } from "react";
 
+import strategicSnapshot from "./data/strategic-insights.json";
+import { buildPublicProfileQueries } from "../lib/contact-discovery.js";
+import { classifyGeotechTier } from "../lib/opportunity-intelligence.js";
+import { analyseScopeBundle } from "../lib/strategic-insights.js";
 import type { AustraliaOpportunity, Jurisdiction, OpportunityStage, OpportunityType } from "../src/opportunity/schema";
-import { scoreOpportunity as calculateOpportunityScore } from "../src/opportunity/scoring";
+import { scoreOpportunity as calculateOpportunityScore, scoringWeights } from "../src/opportunity/scoring";
 
 type Opportunity = {
   id: string;
@@ -25,7 +29,6 @@ type Opportunity = {
   competition: number;
   risk: number;
   strategic: number;
-  winProbability: number;
   travel: number;
   resourceFit: number;
   confidence: number;
@@ -70,7 +73,6 @@ const opportunities: Opportunity[] = [
     competition: 44,
     risk: 38,
     strategic: 81,
-    winProbability: 72,
     travel: 88,
     resourceFit: 78,
     confidence: 86,
@@ -126,7 +128,6 @@ const opportunities: Opportunity[] = [
     competition: 61,
     risk: 43,
     strategic: 92,
-    winProbability: 68,
     travel: 74,
     resourceFit: 84,
     confidence: 79,
@@ -170,7 +171,6 @@ const opportunities: Opportunity[] = [
     competition: 39,
     risk: 35,
     strategic: 88,
-    winProbability: 81,
     travel: 91,
     resourceFit: 73,
     confidence: 74,
@@ -214,7 +214,6 @@ const opportunities: Opportunity[] = [
     competition: 58,
     risk: 49,
     strategic: 86,
-    winProbability: 59,
     travel: 67,
     resourceFit: 69,
     confidence: 71,
@@ -258,7 +257,6 @@ const opportunities: Opportunity[] = [
     competition: 66,
     risk: 57,
     strategic: 79,
-    winProbability: 52,
     travel: 42,
     resourceFit: 58,
     confidence: 67,
@@ -302,7 +300,6 @@ const opportunities: Opportunity[] = [
     competition: 53,
     risk: 31,
     strategic: 64,
-    winProbability: 66,
     travel: 55,
     resourceFit: 86,
     confidence: 91,
@@ -424,52 +421,106 @@ function timingScore(opportunity: Opportunity) {
 }
 
 function scoreOpportunity(opportunity: Opportunity) {
-  return calculateOpportunityScore({
-    strategicFit: opportunity.strategic,
-    winProbability: opportunity.winProbability,
-    revenuePotential: Math.min(100, opportunity.geotechRevenue[1] / 2000),
-    timing: timingScore(opportunity),
-    relationshipPathway: opportunity.relationship,
-    evidenceConfidence: opportunity.confidence,
+  const scope = opportunity.scope.join(". ");
+  const classification = classifyGeotechTier({ title: opportunity.name, scope });
+  const bundle = analyseScopeBundle({ title: opportunity.name, scope });
+  const assessment = calculateOpportunityScore({
+    geotechRelevance: classification.geotechRelevanceScore,
+    capabilityMatch: opportunity.resourceFit,
+    commercialValue: Math.min(100, opportunity.geotechRevenue[1] / 2_000),
+    procurementReadiness: timingScore(opportunity),
+    relationshipStrength: opportunity.relationship,
+    clientPriority: opportunity.strategic,
+    competitivePosition: 100 - opportunity.competition,
+    bundleFit: bundle.isTurnkey ? 95 : bundle.isBundled ? 75 : 35,
+    locationFit: opportunity.travel,
+    sourceQuality: opportunity.confidence,
+    strongIncumbent: opportunity.competition >= 65,
+    noRelationshipPathway: opportunity.relationship < 45,
+    singleSpecialistService: !bundle.isBundled,
+    outsidePreferredGeography: opportunity.travel < 50,
+    planningOnly: ["Land acquisition", "Budget allocation"].includes(opportunity.stage),
+    weakSourceConfidence: opportunity.confidence < 65,
+    belowMinimumFee: opportunity.geotechRevenue[1] < 20_000,
+    capabilityGap: opportunity.resourceFit < 50,
+    existingClient: opportunity.relationship >= 70,
+    knownContact: opportunity.contacts.some((contact) => contact.strength === "Warm"),
+    repeatBuyer: opportunity.signals.some((signal) => /previous|repeat|prior/i.test(signal)),
+    rigUtilisationOpportunity: /borehole|drilling|rock coring/i.test(scope),
+    turnkeyPackage: bundle.isTurnkey,
+    closingWithin14Days: opportunity.stage === "Tender open",
+    earlyMoverSignal: !["Tender open", "Pre-tender notice"].includes(opportunity.stage),
   });
+  return { ...assessment, geoTier: classification.geoTier as "A" | "B" | "C" };
 }
 
 function scoreClass(score: number) {
-  if (score >= 78) return "hot";
+  if (score >= 80) return "hot";
   if (score >= 65) return "warm";
   return "watch";
 }
 
 export default function Home() {
-  const [activeId, setActiveId] = useState(opportunities[0].id);
+  const [activeId, setActiveId] = useState("OP-2422");
+  const [queueFilter, setQueueFilter] = useState<"Pursue" | "Watch" | "Archive">("Pursue");
   const [stageFilter, setStageFilter] = useState("All");
   const [detailView, setDetailView] = useState<"intel" | "pursuit">("intel");
   const [briefOpen, setBriefOpen] = useState(false);
   const [proposalReady, setProposalReady] = useState(false);
+  const [feedbackChoice, setFeedbackChoice] = useState<"Pursue" | "Watch" | "Pass" | null>(null);
+  const [passReason, setPassReason] = useState("");
+  const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const ranked = useMemo(() => opportunities.map((opportunity) => {
     const assessment = scoreOpportunity(opportunity);
     return { ...opportunity, assessment, score: assessment.overall };
   }).sort((a, b) => b.score - a.score), []);
   const stages = ["All", ...Array.from(new Set(ranked.map((item) => item.stage)))];
-  const visible = stageFilter === "All" ? ranked : ranked.filter((item) => item.stage === stageFilter);
+  const queued = ranked.filter((item) => item.assessment.decisionQueue === queueFilter);
+  const visible = stageFilter === "All" ? queued : queued.filter((item) => item.stage === stageFilter);
   const active = ranked.find((item) => item.id === activeId) ?? ranked[0];
-  const weightedPipeline = ranked.reduce((total, item) => total + item.geotechRevenue[1] * (item.winProbability / 100), 0);
+  const pursuitPipeline = ranked.filter((item) => item.assessment.decisionQueue === "Pursue").reduce((total, item) => total + item.geotechRevenue[1], 0);
   const early = ranked.filter((item) => !["Tender open", "Pre-tender notice"].includes(item.stage)).length;
-  const highPriority = ranked.filter((item) => item.score >= 70).length;
-  const drivers = [
-    { label: "Strategic fit", value: active.assessment.strategicFit, weight: "30%", tone: "gold" },
-    { label: "Win probability", value: active.assessment.winProbability, weight: "20%", tone: "green" },
-    { label: "Revenue potential", value: active.assessment.revenuePotential, weight: "15%", tone: "ink" },
-    { label: "Timing", value: active.assessment.timing, weight: "15%", tone: "blue" },
-    { label: "Relationship pathway", value: active.assessment.relationshipPathway, weight: "10%", tone: "red" },
-    { label: "Evidence confidence", value: active.assessment.evidenceConfidence, weight: "10%", tone: "green" },
-  ];
+  const highPriority = ranked.filter((item) => item.assessment.decisionQueue === "Pursue").length;
+  const tones = ["gold", "green", "ink", "blue", "red", "green", "blue", "gold", "ink", "green"];
+  const drivers = scoringWeights.map((driver, index) => ({
+    ...driver,
+    value: active.assessment[driver.key],
+    tone: tones[index],
+  }));
   const signalChain = active.signals.slice(0, 4).map((signal, index) => ({
     label: ["Funding / intent", "Planning / approval", "Procurement route", "Delivery pathway"][index],
     signal,
     state: index === active.signals.slice(0, 4).length - 1 ? "Current" : "Verified",
   }));
+  const activeBundle = analyseScopeBundle({ title: active.name, scope: active.scope.join(". ") });
+  const publicProfileSearches = buildPublicProfileQueries({
+    company: active.consultant,
+    agency: active.client,
+    project: active.name,
+    location: active.location,
+    roles: ["Geotechnical Lead", "Project Director", "Estimating Manager"],
+  });
+  const snapshotDate = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(strategicSnapshot.generatedAt));
+  const bundledBuyerSegment = strategicSnapshot.buyerSegments.find((segment) => segment.label === "Bundled program buyers");
+
+  async function submitFeedback(decision: "Pursue" | "Watch" | "Pass", reasonCategory?: string) {
+    setFeedbackChoice(decision);
+    setFeedbackStatus("saving");
+    const response = await fetch("/api/feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tenderId: active.id,
+        decision,
+        reasonCategory: reasonCategory || null,
+        scoreAtDecision: active.score,
+        tierAtDecision: active.assessment.geoTier,
+        modelVersion: "contextual-rules-2.0.0",
+      }),
+    });
+    setFeedbackStatus(response.ok ? "saved" : "error");
+  }
 
   return (
     <main className="app-shell">
@@ -499,10 +550,10 @@ export default function Home() {
             <p>Link planning, funding, procurement, buyer, and contractor signals into one commercial project thread — then give each pursuit a next action.</p>
           </div>
           <div className="command-panel" aria-label="Today summary">
-            <div><span>Live opportunities</span><strong>{normalizedOpportunities.length}</strong><small>normalised records in the NSW slice</small></div>
-            <div><span>Weighted forecast</span><strong>{shortMoney(weightedPipeline)}</strong><small>probability-adjusted STS revenue</small></div>
+            <div><span>Live opportunities</span><strong>{normalizedOpportunities.length}</strong><small>normalised records in the Australian demo slice</small></div>
+            <div><span>Pursuit pipeline</span><strong>{shortMoney(pursuitPipeline)}</strong><small>upper fee range in the Pursue queue</small></div>
             <div><span>Early signal projects</span><strong>{early}</strong><small>before a formal tender appears</small></div>
-            <div><span>Priority today</span><strong>{highPriority}</strong><small>pursuits scoring 70 or above</small></div>
+            <div><span>Priority today</span><strong>{highPriority}</strong><small>auditable scores of 80 or above</small></div>
           </div>
         </div>
       </section>
@@ -523,6 +574,10 @@ export default function Home() {
             ))}
           </div>
           <div className="panel">
+            <div className="section-heading"><span>Commercial action</span><strong>Queue</strong></div>
+            <div className="stage-list">{(["Pursue", "Watch", "Archive"] as const).map((queue) => <button className={queue === queueFilter ? "active" : ""} key={queue} onClick={() => setQueueFilter(queue)} type="button">{queue}<span>{ranked.filter((item) => item.assessment.decisionQueue === queue).length}</span></button>)}</div>
+          </div>
+          <div className="panel">
             <div className="section-heading"><span>Pipeline lens</span><strong>Stage</strong></div>
             <div className="stage-list">{stages.map((stage) => <button className={stage === stageFilter ? "active" : ""} key={stage} onClick={() => setStageFilter(stage)} type="button">{stage}<span>{stage === "All" ? ranked.length : ranked.filter((item) => item.stage === stage).length}</span></button>)}</div>
           </div>
@@ -533,14 +588,15 @@ export default function Home() {
 
         <section className="opportunity-board" aria-label="Ranked opportunities">
           <div className="board-header">
-            <div><p className="eyebrow">Decision queue</p><h3>Ranked opportunity records</h3><p className="board-description">Transparent scoring combines strategic fit, win probability, revenue, timing, relationship pathway, and evidence confidence.</p></div>
+            <div><p className="eyebrow">Decision queue</p><h3>{queueFilter} opportunities</h3><p className="board-description">Ten visible components separate geotechnical relevance from commercial fit, capability, readiness, relationships, and source quality.</p></div>
             <span>{visible.length} shown</span>
           </div>
           <div className="queue-head"><span>Score</span><span>Opportunity</span><span>Value / timing</span></div>
           <div className="opportunity-list">
+            {visible.length === 0 && <div className="queue-empty"><strong>No opportunities in this view</strong><span>Change the queue or stage filter to inspect other records.</span></div>}
             {visible.map((item) => (
-              <button className={`opportunity-row ${item.id === active.id ? "selected" : ""}`} key={item.id} onClick={() => { setActiveId(item.id); setDetailView("intel"); }} type="button">
-                <span className={`score-pill ${scoreClass(item.score)}`}>{item.score}<small>fit</small></span>
+              <button className={`opportunity-row ${item.id === active.id ? "selected" : ""}`} key={item.id} onClick={() => { setActiveId(item.id); setDetailView("intel"); setFeedbackChoice(null); setFeedbackStatus("idle"); setPassReason(""); }} type="button">
+                <span className={`score-pill ${scoreClass(item.score)}`}>{item.score}<small>score</small></span>
                 <span className="opportunity-main"><strong>{item.name}</strong><small>{item.location} <i>•</i> {item.stage} <i>•</i> {item.opportunityType ?? "project signal"}</small><em>{item.sector} <i>•</i> {item.source}</em></span>
                 <span className="revenue-range"><strong>{shortMoney(item.geotechRevenue[0])}-{shortMoney(item.geotechRevenue[1])}</strong><small>{item.closeDate}</small></span>
               </button>
@@ -563,13 +619,21 @@ export default function Home() {
               <div className="metric-grid">
                 <div><span>Project value</span><strong>{money(active.value)}</strong></div>
                 <div><span>STS revenue</span><strong>{shortMoney(active.geotechRevenue[0])}-{shortMoney(active.geotechRevenue[1])}</strong></div>
-                <div><span>Win probability</span><strong>{active.winProbability}%</strong></div>
+                <div><span>Decision queue</span><strong>{active.assessment.decisionQueue}</strong></div>
                 <div><span>Construction start</span><strong>{active.constructionStart}</strong></div>
               </div>
               <div className="info-stack">
                 <div><span>Client</span><strong>{active.client}</strong></div><div><span>Builder</span><strong>{active.builder}</strong></div><div><span>Consultant</span><strong>{active.consultant}</strong></div><div><span>Pursuit owner</span><strong>{active.owner}</strong></div>
               </div>
               <div className="recommendation"><span>Recommended next move</span><p>{active.nextAction}</p><small>Timing: {active.closeDate} <i>•</i> source fields remain un-inferred</small></div>
+              <div className="feedback-panel">
+                <div><span>Estimator decision</span><strong>Tier {active.assessment.geoTier} · score {active.score}</strong></div>
+                <div className="feedback-actions" aria-label="Estimator decision">
+                  {(["Pursue", "Watch", "Pass"] as const).map((decision) => <button aria-pressed={feedbackChoice === decision} className={feedbackChoice === decision ? "selected" : ""} key={decision} onClick={() => { if (decision === "Pass") { setFeedbackChoice("Pass"); setFeedbackStatus("idle"); } else void submitFeedback(decision); }} type="button">{decision}</button>)}
+                </div>
+                {feedbackChoice === "Pass" && <div className="pass-reason"><select aria-label="Pass reason" onChange={(event) => setPassReason(event.target.value)} value={passReason}><option value="">Select reason</option>{["Below minimum fee", "Capability gap", "No relationship pathway", "Strong incumbent", "Outside operational region", "Insufficient information", "Timing or capacity", "Other"].map((reason) => <option key={reason}>{reason}</option>)}</select><button disabled={!passReason || feedbackStatus === "saving"} onClick={() => void submitFeedback("Pass", passReason)} type="button">Store decision</button></div>}
+                {feedbackStatus !== "idle" && <small className={`feedback-status ${feedbackStatus}`}>{feedbackStatus === "saving" ? "Saving decision..." : feedbackStatus === "saved" ? "Decision stored for model calibration." : "Database storage is not configured."}</small>}
+              </div>
             </>
           ) : (
             <>
@@ -584,7 +648,7 @@ export default function Home() {
       <section className="intelligence-grid" aria-label="Pursuit intelligence">
         <section className="panel score-panel">
           <div className="section-heading"><div><span>Why this ranks here</span><strong>Score drivers</strong></div><b>{active.score}/100</b></div>
-          <p className="panel-intro">A transparent six-part model. Missing dates, values, buyers, and requirements remain missing rather than being invented.</p>
+          <p className="panel-intro">A transparent ten-component operational score, not a win probability. Missing evidence remains unknown rather than receiving an implicit advantage.</p>
           <div className="driver-list">{drivers.map((driver) => <div className="driver-row" key={driver.label}><span>{driver.label}<small>{driver.weight}</small></span><div className="progress-track"><i className={driver.tone} style={{ width: `${driver.value}%` }} /></div><b>{driver.value}</b></div>)}</div>
           <div className="signal-scope"><div><h4>Detected signals</h4><ul>{active.signals.map((signal) => <li key={signal}>{signal}</li>)}</ul></div><div><h4>Likely geotech scope</h4><ul>{active.scope.map((scope) => <li key={scope}>{scope}</li>)}</ul></div></div>
         </section>
@@ -599,7 +663,43 @@ export default function Home() {
           <div className="section-heading"><div><span>Influence map</span><strong>People and access</strong></div><b>{active.relationship}/100</b></div>
           <div className="contact-list">{active.contacts.map((contact) => <div className="contact-row" key={contact.name}><span className="initials">{contact.initials}</span><div><strong>{contact.name}</strong><small>{contact.role}</small></div><em>{contact.strength}</em></div>)}</div>
           <div className="relationship-foot"><span>Relationship posture</span><strong>{active.relationship >= 65 ? "Actively influence" : active.relationship >= 50 ? "Develop access" : "Create entry point"}</strong></div>
+          <div className="public-search-row">
+            <div><span>Public role discovery</span><strong>{active.consultant} decision makers</strong><small>Search-result evidence only · no profile-page automation</small></div>
+            <a href={publicProfileSearches[0].googleUrl} rel="noreferrer" target="_blank">Open search</a>
+          </div>
         </section>
+      </section>
+
+      <section className="strategic-panel panel" aria-label="Historical procurement strategy">
+        <div className="board-header">
+          <div><p className="eyebrow">Award pattern mining</p><h3>Strategic win drivers</h3><p className="board-description">Observed scope bundles, buyer concentration, and service associations from attributable Commonwealth and NSW award records.</p></div>
+          <span>Snapshot {snapshotDate}</span>
+        </div>
+        <div className="strategic-metrics">
+          <div><span>Awards analysed</span><strong>{strategicSnapshot.metrics.eligibleAwards}</strong><small>classified geotech records</small></div>
+          <div><span>Bundled scope</span><strong>{strategicSnapshot.metrics.bundledAwards}</strong><small>{(strategicSnapshot.metrics.bundleRate * 100).toFixed(1)}% detected rate</small></div>
+          <div><span>Turnkey pattern</span><strong>{strategicSnapshot.metrics.turnkeyAwards}</strong><small>field + lab + engineering</small></div>
+          <div><span>Buyer coverage</span><strong>{strategicSnapshot.metrics.buyers}</strong><small>{strategicSnapshot.metrics.suppliers} awarded suppliers</small></div>
+        </div>
+        <div className="strategic-body">
+          <div className="insight-list">
+            {strategicSnapshot.insights.map((insight) => (
+              <article className="insight-row" key={insight.id}>
+                <span className={`confidence-tag ${insight.confidence}`}>{insight.confidence}</span>
+                <div><strong>{insight.title}</strong><p>{insight.finding}</p><small>Commercial response: {insight.action}</small></div>
+              </article>
+            ))}
+          </div>
+          <aside className="scope-model">
+            <span className="eyebrow">Selected pursuit</span>
+            <strong>{activeBundle.bundleLabel}</strong>
+            <p>{activeBundle.serviceFamilies.length} service families detected from the current scope.</p>
+            <div className="capability-tags">{activeBundle.capabilities.slice(0, 6).map((capability) => <span key={capability.id}>{capability.label}</span>)}</div>
+            {bundledBuyerSegment && <div className="segment-benchmark"><span>Historical benchmark</span><b>{bundledBuyerSegment.label}</b><small>{bundledBuyerSegment.buyerCount} buyers · {(bundledBuyerSegment.averageBundleRate * 100).toFixed(1)}% bundle rate · {money(bundledBuyerSegment.medianAwardValue ?? 0)} median disclosed value</small></div>}
+            <div className="model-gate"><span>Win model</span><b>Data gated</b><small>{strategicSnapshot.modelReadiness.reason}</small></div>
+          </aside>
+        </div>
+        <div className="strategy-foot"><span>Source: {strategicSnapshot.source}</span><strong>Association is not causation · award share is not bidder win rate</strong></div>
       </section>
 
       <section className="signal-thread panel" aria-label="Commercial project signal chain">

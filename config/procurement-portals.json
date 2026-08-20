@@ -1,0 +1,96 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-08-20",
+  "portals": [
+    {
+      "id": "austender",
+      "jurisdiction": "Commonwealth",
+      "name": "AusTender",
+      "url": "https://www.tenders.gov.au/",
+      "collectionStatus": "implemented",
+      "accessMode": "official OCDS API",
+      "automationPolicy": "daily API pagination with retry and resumable checkpoints"
+    },
+    {
+      "id": "buy-nsw",
+      "jurisdiction": "NSW",
+      "name": "buy NSW",
+      "url": "https://buy.nsw.gov.au/notices",
+      "collectionStatus": "implemented",
+      "accessMode": "public notice reports and historical API/export",
+      "automationPolicy": "prefer complete notice CSV reports; retain source URLs"
+    },
+    {
+      "id": "qtenders",
+      "jurisdiction": "QLD",
+      "name": "QTenders",
+      "url": "https://qtenders.epw.qld.gov.au/qtenders/",
+      "collectionStatus": "adapter-required",
+      "accessMode": "public search and awarded-tender pages",
+      "automationPolicy": "collect only public pages after robots and terms review"
+    },
+    {
+      "id": "buying-for-victoria",
+      "jurisdiction": "VIC",
+      "name": "Buying for Victoria Tenders Portal",
+      "url": "https://www.tenders.vic.gov.au/",
+      "collectionStatus": "adapter-required",
+      "accessMode": "public tender and contract search",
+      "automationPolicy": "prefer portal export; do not automate registered documents"
+    },
+    {
+      "id": "tenders-wa",
+      "jurisdiction": "WA",
+      "name": "Tenders WA",
+      "url": "https://www.tenders.wa.gov.au/watenders/index.do",
+      "collectionStatus": "adapter-required",
+      "accessMode": "public tender and contract search",
+      "automationPolicy": "prefer procurement data export; do not automate login"
+    },
+    {
+      "id": "sa-tenders",
+      "jurisdiction": "SA",
+      "name": "SA Tenders and Contracts",
+      "url": "https://www.tenders.sa.gov.au/",
+      "collectionStatus": "adapter-required",
+      "accessMode": "public tender and contract search",
+      "automationPolicy": "public metadata only; registered documents require permission"
+    },
+    {
+      "id": "tas-tenders",
+      "jurisdiction": "TAS",
+      "name": "Tasmanian Government Tenders",
+      "url": "https://www.tenders.tas.gov.au/",
+      "collectionStatus": "adapter-required",
+      "accessMode": "public current and future opportunities",
+      "automationPolicy": "confirm export and terms before automated collection"
+    },
+    {
+      "id": "tenders-act",
+      "jurisdiction": "ACT",
+      "name": "Tenders ACT",
+      "url": "https://www.tenders.act.gov.au/",
+      "collectionStatus": "legal-review-required",
+      "accessMode": "limited public access; registration for documents",
+      "automationPolicy": "no automated reuse until terms and commercial-use restrictions are approved"
+    },
+    {
+      "id": "nt-qtol",
+      "jurisdiction": "NT",
+      "name": "Quotations and Tenders Online",
+      "url": "https://tendersonline.nt.gov.au/Tender/Search/Current",
+      "collectionStatus": "adapter-required",
+      "accessMode": "public tender list; registration for additional functions",
+      "automationPolicy": "public metadata only; no automated login"
+    },
+    {
+      "id": "vendorpanel",
+      "jurisdiction": "Local",
+      "name": "VendorPanel",
+      "url": "https://www.vendorpanel.com.au/",
+      "collectionStatus": "manual-export-only",
+      "accessMode": "authenticated member portal",
+      "automationPolicy": "use user-authorised exports; never bypass access controls or automate login"
+    }
+  ]
+}

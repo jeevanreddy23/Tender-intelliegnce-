@@ -40,7 +40,14 @@ next-env.d.ts
 /dist/
 /.wrangler/
 /outputs/
+/output/
 /work/
 /data/austender-awards/
 /data/nsw-awards/
 /data/historical-geotech/
+/data/ml-tender-dataset/
+/data/ml-tender-dataset.build/
+/data/ml-tender-dataset-smoke/
+*.tsbuildinfo
+/.playwright-cli/
+/.playwright-mcp/

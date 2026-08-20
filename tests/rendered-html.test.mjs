@@ -35,7 +35,7 @@ test("server-renders the Australia Opportunity Radar cockpit", async () => {
   assert.match(html, /Find Australian work before it becomes an obvious tender/);
   assert.match(html, /Parramatta Civic Quarter towers/);
   assert.match(html, /Commercial signal thread/);
-  assert.match(html, /Strategic fit/);
+  assert.match(html, /Geotech relevance/);
   assert.match(html, /Intelligence operations/);
   assert.match(html, /Evidence and verification/);
   assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Starter Project/);

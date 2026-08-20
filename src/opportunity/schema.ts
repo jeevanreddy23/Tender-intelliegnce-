@@ -97,21 +97,32 @@ export interface AustraliaOpportunity {
 }
 
 export type OpportunityScoreKey =
-  | "strategicFit"
-  | "winProbability"
-  | "revenuePotential"
-  | "timing"
-  | "relationshipPathway"
-  | "evidenceConfidence";
+  | "geotechRelevance"
+  | "capabilityMatch"
+  | "commercialValue"
+  | "procurementReadiness"
+  | "relationshipStrength"
+  | "clientPriority"
+  | "competitivePosition"
+  | "bundleFit"
+  | "locationFit"
+  | "sourceQuality";
 
 export interface OpportunityAssessment {
-  strategicFit: number;
-  winProbability: number;
-  revenuePotential: number;
-  timing: number;
-  relationshipPathway: number;
-  evidenceConfidence: number;
+  geotechRelevance: number;
+  capabilityMatch: number;
+  commercialValue: number;
+  procurementReadiness: number;
+  relationshipStrength: number;
+  clientPriority: number;
+  competitivePosition: number;
+  bundleFit: number;
+  locationFit: number;
+  sourceQuality: number;
+  weightedScore: number;
+  adjustments: { points: number; reason: string }[];
   overall: number;
+  decisionQueue: "Pursue" | "Watch" | "Archive";
 }
 
 export interface OpportunitySignal {

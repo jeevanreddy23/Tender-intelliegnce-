@@ -1,0 +1,415 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-18T23:21:21.563Z",
+  "source": "STS historical awarded contracts",
+  "coverage": {
+    "AusTender": {
+      "min": "2016-08-17",
+      "max": "2026-08-17"
+    },
+    "NSW eTendering archive": {
+      "min": "2016-08-22",
+      "max": "2025-02-28"
+    }
+  },
+  "metrics": {
+    "eligibleAwards": 141,
+    "bundledAwards": 5,
+    "bundleRate": 0.0355,
+    "turnkeyAwards": 1,
+    "turnkeyRate": 0.0071,
+    "suppliers": 84,
+    "buyers": 30
+  },
+  "insights": [
+    {
+      "id": "bundle-value",
+      "title": "Bundled scope changes the commercial tier",
+      "finding": "Median disclosed value is 2.7x higher for detected multi-service packages.",
+      "evidence": {
+        "bundledAwards": 5,
+        "standaloneAwards": 136,
+        "bundledMedianValue": 313104,
+        "standaloneMedianValue": 116651
+      },
+      "confidence": "directional",
+      "action": "Position one accountable investigation, testing, and engineering delivery plan when the scope spans multiple service families."
+    },
+    {
+      "id": "scope-association",
+      "title": "A repeatable scope pairing is visible",
+      "finding": "pavement predicts laboratory-testing with 100% confidence and 22.62 lift.",
+      "evidence": {
+        "antecedent": "family:pavement",
+        "consequent": "family:laboratory-testing",
+        "count": 4,
+        "support": 0.0354,
+        "confidence": 1,
+        "lift": 22.624
+      },
+      "confidence": "directional",
+      "action": "Qualify both capabilities and subcontractor coverage before treating the opportunity as a standalone service."
+    },
+    {
+      "id": "buyer-concentration",
+      "title": "Buyer history shows repeat-award concentration",
+      "finding": "Department of Agriculture, Fisheries and Forestry's leading supplier holds 25% of observed geotechnical awards in this dataset.",
+      "evidence": {
+        "agency": "Department of Agriculture, Fisheries and Forestry",
+        "awards": 12,
+        "medianAwardValue": 165000,
+        "bundleRate": 0,
+        "turnkeyRate": 0,
+        "complianceSignalRate": 0,
+        "leadingSupplierAwardShare": 0.25
+      },
+      "confidence": "moderate",
+      "action": "Treat relationship access and incumbent displacement as explicit pursuit workstreams."
+    }
+  ],
+  "associations": [
+    {
+      "antecedent": "family:pavement",
+      "consequent": "family:laboratory-testing",
+      "count": 4,
+      "support": 0.0354,
+      "confidence": 1,
+      "lift": 22.624
+    },
+    {
+      "antecedent": "family:laboratory-testing",
+      "consequent": "family:pavement",
+      "count": 4,
+      "support": 0.0354,
+      "confidence": 0.8,
+      "lift": 22.599
+    },
+    {
+      "antecedent": "family:field-investigation",
+      "consequent": "unspsc:20110000",
+      "count": 2,
+      "support": 0.0177,
+      "confidence": 0.0741,
+      "lift": 4.186
+    },
+    {
+      "antecedent": "unspsc:20110000",
+      "consequent": "family:field-investigation",
+      "count": 2,
+      "support": 0.0177,
+      "confidence": 1,
+      "lift": 4.186
+    },
+    {
+      "antecedent": "family:monitoring",
+      "consequent": "unspsc:77100000",
+      "count": 2,
+      "support": 0.0177,
+      "confidence": 0.25,
+      "lift": 4.039
+    },
+    {
+      "antecedent": "unspsc:77100000",
+      "consequent": "family:monitoring",
+      "count": 2,
+      "support": 0.0177,
+      "confidence": 0.2857,
+      "lift": 4.035
+    },
+    {
+      "antecedent": "family:field-investigation",
+      "consequent": "unspsc:81150000",
+      "count": 10,
+      "support": 0.0885,
+      "confidence": 0.3704,
+      "lift": 1.994
+    },
+    {
+      "antecedent": "unspsc:81150000",
+      "consequent": "family:field-investigation",
+      "count": 10,
+      "support": 0.0885,
+      "confidence": 0.4762,
+      "lift": 1.993
+    },
+    {
+      "antecedent": "family:field-investigation",
+      "consequent": "unspsc:41100000",
+      "count": 2,
+      "support": 0.0177,
+      "confidence": 0.0741,
+      "lift": 1.676
+    },
+    {
+      "antecedent": "unspsc:41100000",
+      "consequent": "family:field-investigation",
+      "count": 2,
+      "support": 0.0177,
+      "confidence": 0.4,
+      "lift": 1.674
+    },
+    {
+      "antecedent": "family:field-investigation",
+      "consequent": "unspsc:81100000",
+      "count": 3,
+      "support": 0.0265,
+      "confidence": 0.1111,
+      "lift": 0.966
+    },
+    {
+      "antecedent": "unspsc:81100000",
+      "consequent": "family:field-investigation",
+      "count": 3,
+      "support": 0.0265,
+      "confidence": 0.2308,
+      "lift": 0.966
+    }
+  ],
+  "buyerSegments": [
+    {
+      "cluster": 1,
+      "buyerCount": 14,
+      "awardCount": 109,
+      "averageBundleRate": 0,
+      "averageComplianceSignalRate": 0,
+      "averageLeadingSupplierShare": 0.3545,
+      "medianAwardValue": 159500,
+      "agencies": [
+        "CSIRO",
+        "Department of Agriculture, Fisheries and Forestry",
+        "Department of Climate Change, Energy, the Environment and Water",
+        "Department of Defence",
+        "Department of Education – Corporate",
+        "Department of Infrastructure, Transport, Regional Development, Communications and the Arts",
+        "Dept of Planning, Housing and Infrastructure",
+        "Geoscience Australia",
+        "Health Infrastructure",
+        "Homes NSW",
+        "NSW Public Works",
+        "National Capital Authority",
+        "Sydney Metro",
+        "Sydney Trains"
+      ],
+      "label": "Standalone / specialist buyers"
+    },
+    {
+      "cluster": 2,
+      "buyerCount": 2,
+      "awardCount": 14,
+      "averageBundleRate": 0.2666,
+      "averageComplianceSignalRate": 0,
+      "averageLeadingSupplierShare": 0.2111,
+      "medianAwardValue": 2194673.25,
+      "agencies": [
+        "Transport for NSW (Legacy Transport Infrastructure Projects)",
+        "Transport for NSW (Transport Infrastructure Projects)"
+      ],
+      "label": "Bundled program buyers"
+    },
+    {
+      "cluster": 0,
+      "buyerCount": 3,
+      "awardCount": 7,
+      "averageBundleRate": 0,
+      "averageComplianceSignalRate": 0,
+      "averageLeadingSupplierShare": 0.8333,
+      "medianAwardValue": 35926.59,
+      "agencies": [
+        "Australian Signals Directorate",
+        "Department of Finance",
+        "Department of Veterans' Affairs"
+      ],
+      "label": "Relationship-concentrated buyers"
+    }
+  ],
+  "topSupplierProfiles": [
+    {
+      "supplier": "Douglas Partners Pty Ltd",
+      "awards": 5,
+      "familyBreadth": 5,
+      "clientCount": 5,
+      "awardValue": 2032921,
+      "observedArchetype": "broad-scope"
+    },
+    {
+      "supplier": "GOLDER ASSOCIATES PTY LTD",
+      "awards": 4,
+      "familyBreadth": 3,
+      "clientCount": 2,
+      "awardValue": 5574753.8,
+      "observedArchetype": "multi-service"
+    },
+    {
+      "supplier": "JK Geotechnics Pty Ltd",
+      "awards": 6,
+      "familyBreadth": 2,
+      "clientCount": 5,
+      "awardValue": 1020388.8,
+      "observedArchetype": "multi-service"
+    },
+    {
+      "supplier": "Aitken Rowe Testing Laboratories Pty Ltd",
+      "awards": 1,
+      "familyBreadth": 2,
+      "clientCount": 1,
+      "awardValue": 243320,
+      "observedArchetype": "multi-service"
+    },
+    {
+      "supplier": "AUSTRALIAN SOIL AND CONCRETE TESTING PTY LTD",
+      "awards": 1,
+      "familyBreadth": 2,
+      "clientCount": 1,
+      "awardValue": 220907.5,
+      "observedArchetype": "multi-service"
+    },
+    {
+      "supplier": "GHD PTY LTD",
+      "awards": 11,
+      "familyBreadth": 1,
+      "clientCount": 7,
+      "awardValue": 8842586.27,
+      "observedArchetype": "specialist"
+    },
+    {
+      "supplier": "Jacobs Group (Australia) Pty Ltd",
+      "awards": 3,
+      "familyBreadth": 1,
+      "clientCount": 2,
+      "awardValue": 287078,
+      "observedArchetype": "specialist"
+    },
+    {
+      "supplier": "RPS AAP CONSULTING PTY LTD",
+      "awards": 3,
+      "familyBreadth": 1,
+      "clientCount": 2,
+      "awardValue": 1108772,
+      "observedArchetype": "specialist"
+    },
+    {
+      "supplier": "Geosensor Wireline Pty Ltd",
+      "awards": 3,
+      "familyBreadth": 1,
+      "clientCount": 1,
+      "awardValue": 146547.3,
+      "observedArchetype": "specialist"
+    },
+    {
+      "supplier": "WSP AUSTRALIA PTY LIMITED",
+      "awards": 2,
+      "familyBreadth": 1,
+      "clientCount": 2,
+      "awardValue": 15296175.91,
+      "observedArchetype": "specialist"
+    }
+  ],
+  "topBuyerProfiles": [
+    {
+      "agency": "Department of Defence",
+      "awards": 28,
+      "medianAwardValue": 27424.1,
+      "bundleRate": 0,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.1071
+    },
+    {
+      "agency": "Geoscience Australia",
+      "awards": 20,
+      "medianAwardValue": 34439.115,
+      "bundleRate": 0,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.2
+    },
+    {
+      "agency": "Department of Agriculture, Fisheries and Forestry",
+      "awards": 12,
+      "medianAwardValue": 165000,
+      "bundleRate": 0,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.25
+    },
+    {
+      "agency": "Department of Climate Change, Energy, the Environment and Water",
+      "awards": 9,
+      "medianAwardValue": 199000,
+      "bundleRate": 0,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.2222
+    },
+    {
+      "agency": "Transport for NSW (Transport Infrastructure Projects)",
+      "awards": 9,
+      "medianAwardValue": 174119,
+      "bundleRate": 0.3333,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.2222
+    },
+    {
+      "agency": "Department of Education – Corporate",
+      "awards": 8,
+      "medianAwardValue": 221955.25,
+      "bundleRate": 0,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.25
+    },
+    {
+      "agency": "National Capital Authority",
+      "awards": 6,
+      "medianAwardValue": 35484.5,
+      "bundleRate": 0,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.5
+    },
+    {
+      "agency": "Transport for NSW (Legacy Transport Infrastructure Projects)",
+      "awards": 5,
+      "medianAwardValue": 4215227.5,
+      "bundleRate": 0.2,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.2
+    },
+    {
+      "agency": "Homes NSW",
+      "awards": 5,
+      "medianAwardValue": 112860,
+      "bundleRate": 0,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.6
+    },
+    {
+      "agency": "Department of Infrastructure, Transport, Regional Development, Communications and the Arts",
+      "awards": 4,
+      "medianAwardValue": 55597.95,
+      "bundleRate": 0,
+      "turnkeyRate": 0,
+      "complianceSignalRate": 0,
+      "leadingSupplierAwardShare": 0.25
+    }
+  ],
+  "modelReadiness": {
+    "winProbabilityTraining": "blocked",
+    "reason": "Award-only records do not contain unsuccessful bidders, bid prices, or evaluated capability features.",
+    "required": [
+      "bidder participation",
+      "submitted price",
+      "evaluation outcome",
+      "capability registry at bid date"
+    ]
+  },
+  "guardrails": [
+    "Association and lift describe observed co-occurrence, not causation.",
+    "Supplier breadth is inferred from observed award scope, not verified ownership of rigs, laboratories, or accreditations.",
+    "Repeat-award concentration is not bidder win rate.",
+    "Low-count findings remain directional until more matched tender and bidder records are available."
+  ]
+}
