@@ -9,6 +9,32 @@ It models how STS Geotechnics could monitor tenders, planning approvals,
 developer activity, consultants, builders, competitors, and proposal readiness
 in one daily operating view.
 
+## Reference Architecture
+
+![STS tender intelligence reference architecture](docs/architecture.svg)
+
+The design keeps the relational procurement database as the system of record.
+Document extraction and agent workflows enrich those records but do not own
+basic filters, dates, values, margins or other deterministic calculations.
+
+The community [`opencontractau`](https://github.com/demitonapp/opencontractau)
+project is registered as a source-adapter reference, not a production data
+dependency. Its licence, coverage, mappings, tests and operating behaviour must
+pass the [adoption audit](docs/opencontractau-audit.md) at a pinned revision
+before an adapter can be approved.
+
+### Shortlisted-tender analysis
+
+![Bounded parallel tender analysis graph](docs/analysis-graph.svg)
+
+Parallel AI extraction is an optional processing layer for opportunities that
+pass cheap deterministic filters. The Python
+[`AnalysisGraph`](services/tender_analysis/orchestrator.py) uses validated
+Pydantic models, bounded concurrency, retries, timeouts, cost limits, expected
+node counts and explicit failure states. Hard bid gates remain deterministic and
+high-value assessments require human review. See the
+[runtime and integration guide](docs/parallel-analysis.md).
+
 ## Current Product Slice
 
 - Pursue, Watch, and Archive queues with deterministic contextual scoring
@@ -44,11 +70,20 @@ production build:
 ```bash
 npx wrangler login
 npm run preview
+npm run deploy:check
 npm run deploy
 ```
 
+`deploy:check` builds and validates the complete Worker bundle without uploading
+it. The deployment command explicitly targets the `sts-tender-intelligence`
+Worker and preserves variables managed in the Cloudflare dashboard. For a
+non-interactive deployment, provide a scoped `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` in the deployment environment rather than committing
+credentials to this repository.
+
 The production Worker is available at
-<https://sts-tender-intelligence.poreddyjeevanreddy.workers.dev>.
+<https://sts-tender-intelligence.poreddyjeevanreddy.workers.dev>, and its
+[production deployment is managed in the Cloudflare dashboard](https://dash.cloudflare.com/0d2e259ca49dbaccaee1defdef4b7e16/workers/services/view/sts-tender-intelligence/production).
 
 ## Historical Award Dataset
 
