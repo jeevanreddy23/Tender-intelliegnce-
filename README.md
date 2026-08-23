@@ -23,6 +23,18 @@ dependency. Its licence, coverage, mappings, tests and operating behaviour must
 pass the [adoption audit](docs/opencontractau-audit.md) at a pinned revision
 before an adapter can be approved.
 
+### Shortlisted-tender analysis
+
+![Bounded parallel tender analysis graph](docs/analysis-graph.svg)
+
+Parallel AI extraction is an optional processing layer for opportunities that
+pass cheap deterministic filters. The Python
+[`AnalysisGraph`](services/tender_analysis/orchestrator.py) uses validated
+Pydantic models, bounded concurrency, retries, timeouts, cost limits, expected
+node counts and explicit failure states. Hard bid gates remain deterministic and
+high-value assessments require human review. See the
+[runtime and integration guide](docs/parallel-analysis.md).
+
 ## Current Product Slice
 
 - Pursue, Watch, and Archive queues with deterministic contextual scoring
