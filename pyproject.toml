@@ -1,0 +1,14 @@
+[project]
+name = "sts-tender-analysis"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "pydantic>=2.11,<3",
+  "pydantic-ai-slim>=0.8,<2",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.3,<9"]
+
+[tool.pytest.ini_options]
+testpaths = ["python_tests"]
