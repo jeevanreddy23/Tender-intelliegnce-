@@ -70,11 +70,20 @@ production build:
 ```bash
 npx wrangler login
 npm run preview
+npm run deploy:check
 npm run deploy
 ```
 
+`deploy:check` builds and validates the complete Worker bundle without uploading
+it. The deployment command explicitly targets the `sts-tender-intelligence`
+Worker and preserves variables managed in the Cloudflare dashboard. For a
+non-interactive deployment, provide a scoped `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` in the deployment environment rather than committing
+credentials to this repository.
+
 The production Worker is available at
-<https://sts-tender-intelligence.poreddyjeevanreddy.workers.dev>.
+<https://sts-tender-intelligence.poreddyjeevanreddy.workers.dev>, and its
+[production deployment is managed in the Cloudflare dashboard](https://dash.cloudflare.com/0d2e259ca49dbaccaee1defdef4b7e16/workers/services/view/sts-tender-intelligence/production).
 
 ## Historical Award Dataset
 
