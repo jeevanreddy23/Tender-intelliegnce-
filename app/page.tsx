@@ -73,7 +73,7 @@ type PortalRecord = {
   procurement_type?: string | null;
   status?: string | null;
   categories?: string[];
-  geotech_relevance?: string | null;
+  deterministic_record_kind?: string | null;
   deterministic_geotech_score?: number | null;
   deterministic_geotech_tier?: "A" | "B" | "C" | null;
   prefilter_score?: number | null;
@@ -478,8 +478,9 @@ function formatPortalDate(value?: string | null) {
 function isPortalRecordVisible(record: PortalRecord) {
   if (String(record.state ?? "").trim().toUpperCase() !== "NSW") return false;
   const geotechTier = String(record.deterministic_geotech_tier ?? "").trim().toUpperCase();
-  const isBciProjectLead = record.source === "bci-central" && record.geotech_relevance === "potential_geotech_lead";
-  if (!["A", "B"].includes(geotechTier) && !isBciProjectLead) return false;
+  const isRelatedLead = ["buy-nsw", "bci-central"].includes(record.source)
+    && record.deterministic_record_kind === "potential_geotech_lead";
+  if (!["A", "B"].includes(geotechTier) && !isRelatedLead) return false;
   if (/closed|expired|cancel|award|complet|withdraw/.test(String(record.status ?? "").trim().toLowerCase())) return false;
   if (!record.closing_date) return true;
   const closingTime = Date.parse(record.closing_date);

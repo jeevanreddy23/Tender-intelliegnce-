@@ -97,8 +97,8 @@ const visibleOpportunityPredicate = `
   AND (
     UPPER(TRIM(COALESCE(json_extract(r.authoritative_json, '$.deterministic_geotech_tier'), ''))) IN ('A', 'B')
     OR (
-      r.source = 'bci-central'
-      AND json_extract(r.authoritative_json, '$.geotech_relevance') = 'potential_geotech_lead'
+      r.source IN ('buy-nsw', 'bci-central')
+      AND json_extract(r.authoritative_json, '$.deterministic_record_kind') = 'potential_geotech_lead'
     )
   )
 `;
