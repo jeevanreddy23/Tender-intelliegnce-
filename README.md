@@ -102,6 +102,9 @@ npm run collect:nsw:historical -- --start=2016-08-19 --end=2026-08-19
 # Optional current buy NSW Notice Report exports
 npm run import:nsw:reports -- --input="downloads/notices-2025.csv;downloads/notices-2026.csv"
 
+# Optional community OCDS packages for ACT, QLD, NT, TAS, VIC and councils
+npm run import:opencontractau -- --input="data/opencontractau-raw/act.json" --jurisdiction=ACT
+
 # CSV, NDJSON, Parquet, RAG corpus, supplier summary, and quality report
 npm run build:historical-dataset
 npm run validate:historical-dataset
@@ -117,6 +120,36 @@ Generated files are written under `data/historical-geotech/` and excluded from
 Git. Every record retains its source portal, URL, source identifier, collection
 timestamp, and extraction method. Geotechnical relevance is calculated across
 title, scope, item descriptions, and category rather than title alone.
+
+### OpenContractAU Adapter
+
+[`opencontractau`](https://github.com/demitonapp/opencontractau) is integrated
+as a pinned, optional source adapter and reference implementation. It runs
+outside the Cloudflare Worker and produces OCDS release packages; this project
+then validates and converts those packages into the same award contract used by
+the official AusTender and NSW collectors.
+
+```bash
+# Install the exact source commit audited on 23 August 2026
+python -m pip install -r requirements-opencontractau.txt
+
+# Generate a package with the upstream CLI
+opencontractau act --output data/opencontractau-raw/act.json
+
+# Normalize it with STS provenance, classification and duplicate controls
+npm run import:opencontractau -- --input=data/opencontractau-raw/act.json --jurisdiction=ACT
+npm run build:historical-dataset
+```
+
+The audit is recorded in `config/external-source-adapters.json`. At the pinned
+commit, all 239 upstream tests passed. It is not treated as production
+infrastructure by itself: no PyPI distribution or GitHub release artifact was
+available, and the nine scheduled refresh runs reviewed were failing during
+workflow setup. The audit also records a declared/runtime version mismatch and
+that incremental `since` filtering is unsupported for most jurisdiction
+adapters. Its operational risk is therefore rated medium. Official feeds take
+precedence whenever the same jurisdiction, contract, agency, and supplier
+appear in both sources.
 
 The ML export is written under `data/ml-tender-dataset/`. Its master table has
 exactly 104 canonical fields, alongside normalized tender, award, supplier,
@@ -136,8 +169,9 @@ to prevent future-data leakage.
 `config/procurement-portals.json` records the official Commonwealth, state, and
 territory portals plus VendorPanel. Only AusTender and buy NSW are marked as
 implemented. Other portals are explicitly marked adapter-required,
-manual-export-only, or legal-review-required so coverage is never overstated
-and authenticated access is never bypassed.
+manual-export-only, or legal-review-required even when an audited
+OpenContractAU mapping exists, so community coverage is visible without being
+mistaken for an operational SLA.
 
 ## Estimator Feedback
 
@@ -193,8 +227,8 @@ discontinuation for existing customers on 1 January 2027.
 
 ## Next Iterations
 
-1. Implement and terms-review the QLD, VIC, WA, SA, TAS, ACT, and NT adapters
-   listed in the portal registry, using official exports where available.
+1. Operationalize and monitor the audited OpenContractAU mappings while adding
+   independent official-source validation for QLD, VIC, TAS, ACT, and NT.
 2. Add persistent opportunity, company, contact, and document tables alongside
    the estimator feedback table.
 3. Add document ingestion for PDFs, Word files, drawings, scopes, BOQs, and

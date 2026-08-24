@@ -18,7 +18,8 @@
       "url": "https://www.tenders.gov.au/",
       "collectionStatus": "implemented",
       "accessMode": "official OCDS API",
-      "automationPolicy": "daily API pagination with retry and resumable checkpoints"
+      "automationPolicy": "daily API pagination with retry and resumable checkpoints",
+      "referenceAdapter": { "project": "opencontractau", "jurisdictionKey": "AUSTENDER", "policy": "official collector remains authoritative" }
     },
     {
       "id": "buy-nsw",
@@ -27,7 +28,8 @@
       "url": "https://buy.nsw.gov.au/notices",
       "collectionStatus": "implemented",
       "accessMode": "public notice reports and historical API/export",
-      "automationPolicy": "prefer complete notice CSV reports; retain source URLs"
+      "automationPolicy": "prefer complete notice CSV reports; retain source URLs",
+      "referenceAdapter": { "project": "opencontractau", "jurisdictionKeys": ["NSW_LIVE", "NSW_HISTORICAL"], "policy": "use as gap-fill after official records" }
     },
     {
       "id": "qtenders",
@@ -36,7 +38,8 @@
       "url": "https://qtenders.epw.qld.gov.au/qtenders/",
       "collectionStatus": "adapter-required",
       "accessMode": "public search and awarded-tender pages",
-      "automationPolicy": "collect only public pages after robots and terms review"
+      "automationPolicy": "collect only public pages after robots and terms review",
+      "referenceAdapter": { "project": "opencontractau", "jurisdictionKeys": ["QLD_TMR", "QLD_MULTI", "BCC", "GC_COUNCIL", "LOGAN_COUNCIL", "MORETON_BAY", "IPSWICH_COUNCIL", "SCENIC_RIM"], "coverage": "TMR, selected agencies and councils; not QTenders" }
     },
     {
       "id": "buying-for-victoria",
@@ -45,7 +48,8 @@
       "url": "https://www.tenders.vic.gov.au/",
       "collectionStatus": "adapter-required",
       "accessMode": "public tender and contract search",
-      "automationPolicy": "prefer portal export; do not automate registered documents"
+      "automationPolicy": "prefer portal export; do not automate registered documents",
+      "referenceAdapter": { "project": "opencontractau", "jurisdictionKeys": ["VIC", "MELBOURNE", "MORNINGTON_PENINSULA", "WYNDHAM", "BOROONDARA", "GEELONG", "HOBSONS_BAY"], "coverage": "recent awards and selected councils" }
     },
     {
       "id": "tenders-wa",
@@ -54,7 +58,8 @@
       "url": "https://www.tenders.wa.gov.au/watenders/index.do",
       "collectionStatus": "adapter-required",
       "accessMode": "public tender and contract search",
-      "automationPolicy": "prefer procurement data export; do not automate login"
+      "automationPolicy": "prefer procurement data export; do not automate login",
+      "referenceAdapter": { "project": "opencontractau", "jurisdictionKeys": ["STIRLING_WA"], "coverage": "one council only; statewide portal remains a documented robots.txt gap" }
     },
     {
       "id": "sa-tenders",
@@ -72,7 +77,8 @@
       "url": "https://www.tenders.tas.gov.au/",
       "collectionStatus": "adapter-required",
       "accessMode": "public current and future opportunities",
-      "automationPolicy": "confirm export and terms before automated collection"
+      "automationPolicy": "confirm export and terms before automated collection",
+      "referenceAdapter": { "project": "opencontractau", "jurisdictionKey": "TAS", "coverage": "awarded contracts by public ID enumeration" }
     },
     {
       "id": "tenders-act",
@@ -81,7 +87,8 @@
       "url": "https://www.tenders.act.gov.au/",
       "collectionStatus": "legal-review-required",
       "accessMode": "limited public access; registration for documents",
-      "automationPolicy": "no automated reuse until terms and commercial-use restrictions are approved"
+      "automationPolicy": "no automated reuse of registered tender documents; public contract disclosures may use the data.act.gov.au Socrata source after review",
+      "referenceAdapter": { "project": "opencontractau", "jurisdictionKey": "ACT", "coverage": "public contracts register through Socrata" }
     },
     {
       "id": "nt-qtol",
@@ -90,7 +97,8 @@
       "url": "https://tendersonline.nt.gov.au/Tender/Search/Current",
       "collectionStatus": "adapter-required",
       "accessMode": "public tender list; registration for additional functions",
-      "automationPolicy": "public metadata only; no automated login"
+      "automationPolicy": "public metadata only; no automated login",
+      "referenceAdapter": { "project": "opencontractau", "jurisdictionKey": "NT", "coverage": "public awarded-contract pages" }
     },
     {
       "id": "vendorpanel",

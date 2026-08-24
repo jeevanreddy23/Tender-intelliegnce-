@@ -26,6 +26,15 @@ test("does not treat drilling supplies alone as a geotechnical investigation", (
   assert.equal(result.geotechRelevant, false);
 });
 
+test("does not promote an environmental investigation without ground evidence", () => {
+  const classification = classifyGeotechnical({
+    title: "Kingston Foreshore Environmental Site Investigation",
+    scope: "Environmental assessment and contamination sampling services",
+  });
+  assert.equal(classification.geotechRelevant, false);
+  assert.ok(classification.geotechScore < 25);
+});
+
 test("requires geotechnical context for the ambiguous DCP acronym", () => {
   assert.equal(classifyGeotechnical({ title: "DCP licences and support" }).geotechRelevant, false);
   assert.equal(classifyGeotechnical({ title: "Pavement DCP testing" }).geotechRelevant, true);

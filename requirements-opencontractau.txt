@@ -1,0 +1,2 @@
+# No PyPI distribution existed at the 2026-08-23 audit. Pin the reviewed source commit.
+opencontractau @ git+https://github.com/demitonapp/opencontractau.git@bcc98623003c6dbc5b94263964459bf9e9d7e4d5

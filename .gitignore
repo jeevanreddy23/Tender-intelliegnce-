@@ -44,6 +44,9 @@ next-env.d.ts
 /work/
 /data/austender-awards/
 /data/nsw-awards/
+/data/opencontractau-raw/
+/data/opencontractau-awards/
+/data/historical-geotech.previous/
 /data/historical-geotech/
 /data/ml-tender-dataset/
 /data/ml-tender-dataset.build/

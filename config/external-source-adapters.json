@@ -1,0 +1,95 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-08-23",
+  "adapters": [
+    {
+      "id": "opencontractau",
+      "repository": "https://github.com/demitonapp/opencontractau",
+      "auditedCommit": "bcc98623003c6dbc5b94263964459bf9e9d7e4d5",
+      "auditedCommitUrl": "https://github.com/demitonapp/opencontractau/commit/bcc98623003c6dbc5b94263964459bf9e9d7e4d5",
+      "upstreamVersion": "0.15.0",
+      "declaredPackageVersion": "0.15.0",
+      "runtimeReportedVersion": "0.13.1",
+      "decision": "approved-as-pinned-reference-and-optional-source-adapter",
+      "operationalRisk": "medium",
+      "productionRole": "Generate OCDS packages outside the deployed Worker, then import them through the STS normalization and provenance boundary.",
+      "outputSchema": {
+        "standard": "OCDS",
+        "version": "1.1",
+        "packageType": "ReleasePackage"
+      },
+      "license": {
+        "code": "Apache-2.0",
+        "declaredOutput": "CC-BY-4.0"
+      },
+      "qualityAudit": {
+        "upstreamTests": 239,
+        "upstreamTestsPassed": 239,
+        "testWarnings": 3,
+        "githubReleaseArtifacts": false,
+        "pypiDistributionAvailable": false,
+        "recentScheduledRunsChecked": 9,
+        "recentScheduledRunsPassing": 0,
+        "findings": [
+          "The source package has broad parser and transformer tests that pass at the audited commit.",
+          "The scheduled refresh workflow fails during uv setup because it enables caching without a checked-in uv.lock.",
+          "The workflow invokes opencontractsau while pyproject.toml declares the opencontractau console script.",
+          "Package metadata declares 0.15.0 while opencontractau.__version__ reports 0.13.1.",
+          "Incremental since filtering is supported only for ACT, NSW_LIVE and AUSTENDER; other adapters silently ignore it.",
+          "Scraper-level network, parsing and blocking exceptions propagate to the caller and require adapter-level retry and quarantine handling.",
+          "Coverage is useful but partial; SA, statewide WA and QTenders remain gaps or deferred paths.",
+          "The repository publishes code, not a guaranteed bulk corpus or service-level agreement."
+        ],
+        "additionalFindings": [
+          "Package metadata declares 0.15.0 while opencontractau.__version__ reports 0.13.1.",
+          "Incremental since filtering is supported only for ACT, NSW_LIVE and AUSTENDER; other adapters silently ignore it.",
+          "Scraper-level network, parsing and blocking exceptions propagate to the caller and require adapter-level retry and quarantine handling."
+        ]
+      },
+      "jurisdictionKeys": [
+        "AUSTENDER",
+        "ACT",
+        "QLD_TMR",
+        "QLD_MULTI",
+        "NSW_LIVE",
+        "NSW_HISTORICAL",
+        "NT",
+        "TAS",
+        "VIC",
+        "BCC",
+        "GC_COUNCIL",
+        "LOGAN_COUNCIL",
+        "MORETON_BAY",
+        "IPSWICH_COUNCIL",
+        "SCENIC_RIM",
+        "SYDNEY_COUNCIL",
+        "NORTHERN_BEACHES",
+        "WOLLONGONG",
+        "BLACKTOWN",
+        "CUMBERLAND",
+        "LIVERPOOL_NSW",
+        "CENTRAL_COAST_NSW",
+        "SUTHERLAND_SHIRE",
+        "STIRLING_WA",
+        "MELBOURNE",
+        "MORNINGTON_PENINSULA",
+        "WYNDHAM",
+        "BOROONDARA",
+        "GEELONG",
+        "HOBSONS_BAY"
+      ],
+      "controls": [
+        "Pin the exact upstream commit.",
+        "Identify the audited source by commit SHA, not runtime __version__.",
+        "Prefer official AusTender and NSW feeds when records overlap.",
+        "Validate every package as an OCDS release package before import.",
+        "Retain package URI, upstream commit, source metadata and license in provenance.",
+        "Maintain a per-jurisdiction cursor strategy instead of assuming since is honoured.",
+        "Treat silently ignored date filters as unsupported.",
+        "Apply timeouts, bounded retries and quarantine outside the upstream package.",
+        "Record collection window and record count for every jurisdiction run.",
+        "Do not rely on upstream scheduled refreshes until their workflow is passing."
+      ]
+    }
+  ]
+}

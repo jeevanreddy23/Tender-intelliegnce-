@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-08-18T23:21:21.563Z",
+  "generatedAt": "2026-08-23T12:58:27.944Z",
   "source": "STS historical awarded contracts",
   "coverage": {
     "AusTender": {
@@ -10,16 +10,20 @@
     "NSW eTendering archive": {
       "min": "2016-08-22",
       "max": "2025-02-28"
+    },
+    "OpenContractAU ACT": {
+      "min": "2003-09-30",
+      "max": "2026-08-23"
     }
   },
   "metrics": {
-    "eligibleAwards": 141,
+    "eligibleAwards": 143,
     "bundledAwards": 5,
-    "bundleRate": 0.0355,
+    "bundleRate": 0.035,
     "turnkeyAwards": 1,
-    "turnkeyRate": 0.0071,
-    "suppliers": 84,
-    "buyers": 30
+    "turnkeyRate": 0.007,
+    "suppliers": 85,
+    "buyers": 31
   },
   "insights": [
     {
@@ -28,7 +32,7 @@
       "finding": "Median disclosed value is 2.7x higher for detected multi-service packages.",
       "evidence": {
         "bundledAwards": 5,
-        "standaloneAwards": 136,
+        "standaloneAwards": 138,
         "bundledMedianValue": 313104,
         "standaloneMedianValue": 116651
       },
@@ -38,14 +42,14 @@
     {
       "id": "scope-association",
       "title": "A repeatable scope pairing is visible",
-      "finding": "pavement predicts laboratory-testing with 100% confidence and 22.62 lift.",
+      "finding": "laboratory-testing predicts pavement with 80% confidence and 22.79 lift.",
       "evidence": {
-        "antecedent": "family:pavement",
-        "consequent": "family:laboratory-testing",
+        "antecedent": "family:laboratory-testing",
+        "consequent": "family:pavement",
         "count": 4,
-        "support": 0.0354,
-        "confidence": 1,
-        "lift": 22.624
+        "support": 0.0351,
+        "confidence": 0.8,
+        "lift": 22.792
       },
       "confidence": "directional",
       "action": "Qualify both capabilities and subcontractor coverage before treating the opportunity as a standalone service."
@@ -69,111 +73,111 @@
   ],
   "associations": [
     {
-      "antecedent": "family:pavement",
-      "consequent": "family:laboratory-testing",
-      "count": 4,
-      "support": 0.0354,
-      "confidence": 1,
-      "lift": 22.624
-    },
-    {
       "antecedent": "family:laboratory-testing",
       "consequent": "family:pavement",
       "count": 4,
-      "support": 0.0354,
+      "support": 0.0351,
       "confidence": 0.8,
-      "lift": 22.599
+      "lift": 22.792
+    },
+    {
+      "antecedent": "family:pavement",
+      "consequent": "family:laboratory-testing",
+      "count": 4,
+      "support": 0.0351,
+      "confidence": 1,
+      "lift": 22.779
     },
     {
       "antecedent": "family:field-investigation",
       "consequent": "unspsc:20110000",
       "count": 2,
-      "support": 0.0177,
+      "support": 0.0175,
       "confidence": 0.0741,
-      "lift": 4.186
+      "lift": 4.234
     },
     {
       "antecedent": "unspsc:20110000",
       "consequent": "family:field-investigation",
       "count": 2,
-      "support": 0.0177,
+      "support": 0.0175,
       "confidence": 1,
-      "lift": 4.186
+      "lift": 4.223
     },
     {
       "antecedent": "family:monitoring",
       "consequent": "unspsc:77100000",
       "count": 2,
-      "support": 0.0177,
+      "support": 0.0175,
       "confidence": 0.25,
-      "lift": 4.039
+      "lift": 4.072
     },
     {
       "antecedent": "unspsc:77100000",
       "consequent": "family:monitoring",
       "count": 2,
-      "support": 0.0177,
+      "support": 0.0175,
       "confidence": 0.2857,
-      "lift": 4.035
+      "lift": 4.07
     },
     {
       "antecedent": "family:field-investigation",
       "consequent": "unspsc:81150000",
       "count": 10,
-      "support": 0.0885,
+      "support": 0.0877,
       "confidence": 0.3704,
-      "lift": 1.994
+      "lift": 2.011
     },
     {
       "antecedent": "unspsc:81150000",
       "consequent": "family:field-investigation",
       "count": 10,
-      "support": 0.0885,
+      "support": 0.0877,
       "confidence": 0.4762,
-      "lift": 1.993
-    },
-    {
-      "antecedent": "family:field-investigation",
-      "consequent": "unspsc:41100000",
-      "count": 2,
-      "support": 0.0177,
-      "confidence": 0.0741,
-      "lift": 1.676
+      "lift": 2.011
     },
     {
       "antecedent": "unspsc:41100000",
       "consequent": "family:field-investigation",
       "count": 2,
-      "support": 0.0177,
+      "support": 0.0175,
       "confidence": 0.4,
-      "lift": 1.674
+      "lift": 1.689
+    },
+    {
+      "antecedent": "family:field-investigation",
+      "consequent": "unspsc:41100000",
+      "count": 2,
+      "support": 0.0175,
+      "confidence": 0.0741,
+      "lift": 1.688
     },
     {
       "antecedent": "family:field-investigation",
       "consequent": "unspsc:81100000",
       "count": 3,
-      "support": 0.0265,
+      "support": 0.0263,
       "confidence": 0.1111,
-      "lift": 0.966
+      "lift": 0.975
     },
     {
       "antecedent": "unspsc:81100000",
       "consequent": "family:field-investigation",
       "count": 3,
-      "support": 0.0265,
+      "support": 0.0263,
       "confidence": 0.2308,
-      "lift": 0.966
+      "lift": 0.975
     }
   ],
   "buyerSegments": [
     {
       "cluster": 1,
-      "buyerCount": 14,
-      "awardCount": 109,
+      "buyerCount": 15,
+      "awardCount": 111,
       "averageBundleRate": 0,
       "averageComplianceSignalRate": 0,
-      "averageLeadingSupplierShare": 0.3545,
-      "medianAwardValue": 159500,
+      "averageLeadingSupplierShare": 0.3642,
+      "medianAwardValue": 154000,
       "agencies": [
         "CSIRO",
         "Department of Agriculture, Fisheries and Forestry",
@@ -185,6 +189,7 @@
         "Geoscience Australia",
         "Health Infrastructure",
         "Homes NSW",
+        "Land Development Agency",
         "NSW Public Works",
         "National Capital Authority",
         "Sydney Metro",

@@ -17,13 +17,14 @@ function parseArgs(argv) {
   const options = {
     austender: "data/austender-awards/days",
     nsw: "data/nsw-awards",
+    opencontractau: "data/opencontractau-awards",
     output: "data/historical-geotech",
     threshold: 25,
   };
   for (const argument of argv) {
     if (!argument.startsWith("--")) continue;
     const [key, value = "true"] = argument.slice(2).split("=", 2);
-    if (["austender", "nsw", "output"].includes(key)) options[key] = value;
+    if (["austender", "nsw", "opencontractau", "output"].includes(key)) options[key] = value;
     if (key === "threshold") options.threshold = Number(value);
     if (key === "help") options.help = true;
   }
@@ -40,6 +41,7 @@ Inputs:
   data/austender-awards/days/*.ndjson
   data/nsw-awards/historical-awards.ndjson
   data/nsw-awards/live-notice-reports.ndjson (optional)
+  data/opencontractau-awards/*.ndjson (optional, pinned community adapter)
 
 Outputs include master and geotech-only NDJSON, CSV and Parquet files, RAG
 chunks, supplier summaries, and a machine-readable quality report.
@@ -247,6 +249,16 @@ async function main() {
     console.log(`Merged ${file}; ${written.toLocaleString()} master, ${geotechRelevant.toLocaleString()} geotech.`);
   }
 
+  if (await exists(options.opencontractau)) {
+    const files = (await readdir(options.opencontractau)).filter((file) => file.endsWith(".ndjson")).sort();
+    for (const file of files) {
+      const path = join(options.opencontractau, file);
+      const reader = createInterface({ input: createReadStream(path), crlfDelay: Infinity });
+      for await (const line of reader) if (line.trim()) await accept(JSON.parse(line));
+      console.log(`Merged OpenContractAU ${file}; ${written.toLocaleString()} master, ${geotechRelevant.toLocaleString()} geotech.`);
+    }
+  }
+
   for (const stream of Object.values(streams)) stream.end();
   await Promise.all(Object.values(streams).map((stream) => finished(stream)));
   await masterParquet.close();
@@ -289,6 +301,7 @@ async function main() {
       "Award-only records show successful suppliers, not the complete bidder field; award share is not bidder win rate.",
       "Geotechnical relevance is a deterministic recall-oriented classifier and should be human-reviewed before model training.",
       "Location is sparse because many award notices do not publish a structured delivery location.",
+      "OpenContractAU coverage is community-maintained and is imported only through a pinned, audited package boundary.",
     ],
   };
   await writeFile(join(temporary, "quality-report.json"), `${JSON.stringify(quality, null, 2)}\n`);
