@@ -21,6 +21,25 @@ explicit cross-source project linking. Network collectors remain separate so a
 parser can be tested against saved official samples before any scheduled fetch
 is enabled.
 
+The operational parsing entry points are:
+
+- `parseBuyNswLiveRecords` for structured public Opportunities Hub results.
+- `parseBuyNswNoticeReportRow` for official Register of Notices CSV rows.
+- `parseVendorPanelRss` for the public marketplace feed.
+- `parseEprocurePayload` for approved supplier integrations only; it fails
+  closed until `integrationApproved` is explicitly supplied.
+- `parseTenderNotification` for authorised TenderLink and EstimateOne emails.
+- `parseAusTenderPayload` with mandatory `live` and `historical` stream
+  separation.
+- `parseIcnPayload` for parent projects and their linked work packages.
+
+`validateCanonicalRecord` checks the ingestion contract before persistence.
+`findDuplicateGroups` identifies duplicate advertisements, while
+`findProjectLinkCandidates` creates review-required cross-source suggestions.
+Candidate project links are never silently merged. `scoreIngestedRecord` turns
+the canonical record and explicit commercial context into the existing
+auditable 0–100 opportunity score.
+
 ## Canonical identity
 
 `opportunity_id` identifies a source record. `duplicate_group_id` identifies
@@ -41,8 +60,10 @@ documents and provenance differ.
 3. Apply deterministic Tier A and Tier B geotechnical terms.
 4. Store Tier C infrastructure triggers as `potential_geotech_lead`, never as a
    tender solely because a project might later require geotechnical work.
-5. Link reviewed project signals and deduplicate advertisements.
-6. Run PydanticAI only for shortlisted opportunities or leads needing document
+5. Validate the canonical record and quarantine any missing source identity or
+   provenance fields.
+6. Link reviewed project signals and deduplicate advertisements.
+7. Run PydanticAI only for shortlisted opportunities or leads needing document
    interpretation.
 
 The normalized record includes the requested commercial, supplier, scope,

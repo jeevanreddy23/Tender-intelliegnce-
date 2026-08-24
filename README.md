@@ -151,6 +151,12 @@ multiple signals through `parent_project_id`. See
 [`docs/source-adapters.md`](docs/source-adapters.md) for access boundaries,
 canonical identity rules and the ingestion-before-AI processing order.
 
+Cloudflare AI processing is implemented as an authenticated ingestion endpoint,
+deterministic prefilter, optional Queue consumer, DeepSeek V4 Flash JSON
+analysis, strict authoritative-field protection and D1 persistence. See
+[`docs/deepseek-cloudflare.md`](docs/deepseek-cloudflare.md) for secrets, queue,
+cron, migration and GitHub Actions setup.
+
 ## Estimator Feedback
 
 The dashboard records Pursue, Watch, and Pass decisions through

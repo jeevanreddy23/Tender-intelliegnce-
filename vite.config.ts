@@ -4,6 +4,11 @@ import hostingConfig from "./.openai/hosting.json";
 import { sites } from "./build/sites-vite-plugin";
 
 const STS_D1_DATABASE_ID = "6a3df442-4db8-4e17-a69c-25be4ddce42d";
+const tenderAiQueueName = process.env.TENDER_AI_QUEUE_NAME?.trim() || "sts-tender-ai";
+const tenderAiDeadLetterQueueName = process.env.TENDER_AI_DLQ_NAME?.trim() || "sts-tender-ai-dlq";
+const tenderAiCron = process.env.TENDER_AI_CRON?.trim() || "0 */3 * * *";
+const tenderSourceCron = process.env.TENDER_SOURCE_CRON?.trim() || "15 18 * * *";
+const deepSeekModel = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-v4-flash";
 
 const { d1, r2 } = hostingConfig;
 
@@ -13,6 +18,11 @@ const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 const localBindingConfig = {
   main: "./worker/index.ts",
   compatibility_flags: ["nodejs_compat"],
+  vars: {
+    DEEPSEEK_MODEL: deepSeekModel,
+    TENDER_SOURCE_CRON: tenderSourceCron,
+  },
+  browser: { binding: "BROWSER" },
   d1_databases: d1
     ? [
         {
@@ -31,6 +41,21 @@ const localBindingConfig = {
         },
       ]
     : [],
+  ...(tenderAiQueueName
+    ? {
+        queues: {
+          producers: [{ binding: "TENDER_AI_QUEUE", queue: tenderAiQueueName }],
+          consumers: [{
+            queue: tenderAiQueueName,
+            max_batch_size: 1,
+            max_batch_timeout: 10,
+            max_retries: 3,
+            ...(tenderAiDeadLetterQueueName ? { dead_letter_queue: tenderAiDeadLetterQueueName } : {}),
+          }],
+        },
+        triggers: { crons: [tenderAiCron, tenderSourceCron] },
+      }
+    : {}),
 };
 
 export default defineConfig(async () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import strategicSnapshot from "./data/strategic-insights.json";
 import { buildPublicProfileQueries } from "../lib/contact-discovery.js";
@@ -52,7 +52,43 @@ type Agent = {
   output: string;
 };
 
-const opportunities: Opportunity[] = [
+type PortalRecord = {
+  opportunity_id: string;
+  source: string;
+  source_url: string;
+  title: string;
+  description?: string | null;
+  scope?: string | null;
+  buyer?: string | null;
+  agency?: string | null;
+  project_name?: string | null;
+  project_type?: string | null;
+  sector?: string | null;
+  address?: string | null;
+  suburb?: string | null;
+  state?: string | null;
+  closing_date?: string | null;
+  contract_value?: number | null;
+  estimated_value?: number | null;
+  procurement_type?: string | null;
+  status?: string | null;
+  categories?: string[];
+  geotech_relevance?: string | null;
+  deterministic_geotech_score?: number | null;
+  deterministic_geotech_tier?: "A" | "B" | "C" | null;
+  prefilter_score?: number | null;
+  ai_status?: string;
+  analysis?: {
+    geotech_relevance?: number;
+    services?: string[];
+    estimated_scope?: string | null;
+    recommended_action?: string;
+    confidence?: number;
+  } | null;
+  updated_at?: string;
+};
+
+const demoOpportunities: Opportunity[] = [
   {
     id: "OP-2418",
     name: "Parramatta Civic Quarter towers",
@@ -352,7 +388,7 @@ const sourceUrlMap: Record<string, string> = {
   VendorPanel: "https://www.vendorpanel.com.au/",
 };
 
-const normalizedOpportunities: AustraliaOpportunity[] = opportunities.map((item) => ({
+const normalizedOpportunities: AustraliaOpportunity[] = demoOpportunities.map((item) => ({
   id: item.id,
   sourceName: item.source,
   sourceUrl: sourceUrlMap[item.source] ?? "https://www.nsw.gov.au/",
@@ -403,6 +439,117 @@ const workflow = [
   { step: "Secure consultant intelligence", owner: "J. Murray", due: "15 Jul", state: "Watching" },
   { step: "Price staged investigation", owner: "Bid team", due: "On trigger", state: "Blocked" },
 ];
+
+const portalSourceNames: Record<string, string> = {
+  "buy-nsw": "buy.NSW",
+  vendorpanel: "VendorPanel",
+  austender: "AusTender",
+  "australian-tenders": "Australian Tenders",
+  estimateone: "EstimateOne",
+  tenderlink: "TenderLink",
+  "bci-central": "BCI Central",
+};
+
+function portalOpportunityType(value?: string | null): OpportunityType {
+  const type = String(value ?? "").toLowerCase();
+  if (type.includes("project pipeline")) return "project-pipeline";
+  if (type.includes("rfq") || type.includes("quotation")) return "quotation";
+  if (type.includes("eoi") || type.includes("expression of interest")) return "eoi";
+  if (type.includes("rfi") || type.includes("information")) return "rfi";
+  if (type.includes("rfp") || type.includes("proposal")) return "rfp";
+  if (type.includes("scheme")) return "scheme";
+  return "tender";
+}
+
+function portalJurisdiction(value?: string | null): Jurisdiction {
+  const state = String(value ?? "").toUpperCase();
+  if (["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"].includes(state)) return state as Jurisdiction;
+  if (/COMMONWEALTH|FEDERAL/.test(state)) return "Commonwealth";
+  return "Private";
+}
+
+function formatPortalDate(value?: string | null) {
+  if (!value) return "No closing date published";
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return value;
+  return `Closes ${new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(date)}`;
+}
+
+function isPortalRecordVisible(record: PortalRecord) {
+  if (String(record.state ?? "").trim().toUpperCase() !== "NSW") return false;
+  const geotechTier = String(record.deterministic_geotech_tier ?? "").trim().toUpperCase();
+  const isBciProjectLead = record.source === "bci-central" && record.geotech_relevance === "potential_geotech_lead";
+  if (!["A", "B"].includes(geotechTier) && !isBciProjectLead) return false;
+  if (/closed|expired|cancel|award|complet|withdraw/.test(String(record.status ?? "").trim().toLowerCase())) return false;
+  if (!record.closing_date) return true;
+  const closingTime = Date.parse(record.closing_date);
+  return !Number.isFinite(closingTime) || closingTime >= Date.now();
+}
+
+function portalRecordToOpportunity(record: PortalRecord): Opportunity {
+  const relevance = Math.max(0, Math.min(100, Math.round(record.analysis?.geotech_relevance
+    ?? record.deterministic_geotech_score
+    ?? record.prefilter_score
+    ?? 0)));
+  const projectValue = Number(record.contract_value ?? record.estimated_value ?? 0) || 0;
+  const feeUpper = projectValue > 0
+    ? Math.max(20_000, Math.min(250_000, Math.round(projectValue * 0.001)))
+    : relevance >= 80 ? 80_000 : relevance >= 55 ? 45_000 : 20_000;
+  const services = Array.isArray(record.analysis?.services) ? record.analysis.services.map((item) => item.replaceAll("_", " ")) : [];
+  const categories = Array.isArray(record.categories) ? record.categories : [];
+  const scope = services.length ? services : categories.length ? categories : [record.scope ?? record.description ?? "Public listing metadata only"];
+  const state = portalJurisdiction(record.state);
+  const location = record.address ?? ([record.suburb, record.state].filter(Boolean).join(", ") || String(state));
+  const sourceName = portalSourceNames[record.source] ?? record.source;
+  const status = String(record.status ?? "").toLowerCase();
+  const stage = status === "planned" ? "Pre-tender notice" : status === "closed" || status === "awarded" ? "Closed" : "Tender open";
+  const updated = record.updated_at ? new Date(record.updated_at) : null;
+  const confidence = Math.max(35, Math.min(100, Math.round((record.analysis?.confidence ?? 0.7) * 100)));
+  return {
+    id: record.opportunity_id,
+    name: record.title,
+    stage,
+    source: sourceName,
+    sector: record.sector ?? categories[0] ?? record.project_type ?? "Public procurement",
+    state: String(state),
+    location,
+    client: record.buyer ?? record.agency ?? "Not publicly disclosed",
+    builder: "Not publicly disclosed",
+    consultant: "Not publicly disclosed",
+    owner: "Unassigned",
+    value: projectValue,
+    geotechRevenue: [Math.round(feeUpper * 0.6), feeUpper],
+    closeDate: formatPortalDate(record.closing_date),
+    constructionStart: "Not published",
+    relationship: 30,
+    competition: 50,
+    risk: 50,
+    strategic: relevance,
+    travel: state === "NSW" ? 85 : state === "Commonwealth" ? 70 : 55,
+    resourceFit: relevance,
+    confidence,
+    lastVerified: updated && !Number.isNaN(updated.valueOf())
+      ? new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(updated)
+      : "recently",
+    signals: [
+      `Deterministic geotechnical score ${relevance}`,
+      record.ai_status ? `AI status: ${record.ai_status}` : "Rules assessed",
+      record.procurement_type ? `Procurement type: ${record.procurement_type}` : "Public opportunity metadata",
+      record.buyer ? `Buyer: ${record.buyer}` : "Buyer restricted or not published",
+    ],
+    scope,
+    evidence: [{ title: "Public source listing", source: sourceName, age: "latest sync", confidence: record.analysis ? "AI reviewed" : "Rules assessed" }],
+    contacts: [],
+    risks: [{ risk: "Public metadata may omit subscription-only detail", response: "Open the source and confirm mandatory documents before bidding.", level: "Medium" }],
+    nextAction: record.analysis?.recommended_action
+      ? `Review the ${record.analysis.recommended_action.replaceAll("_", " ")} recommendation and confirm it against the source listing.`
+      : "Open the source listing and confirm scope, dates, and eligibility.",
+    sourceUrl: record.source_url,
+    opportunityType: portalOpportunityType(record.procurement_type),
+    jurisdiction: state,
+    normalizedStage: stage === "Tender open" ? "open" : stage === "Closed" ? "evaluation" : "pre-procurement",
+  };
+}
 
 function money(value: number) {
   return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(value);
@@ -461,8 +608,12 @@ function scoreClass(score: number) {
 }
 
 export default function Home() {
-  const [activeId, setActiveId] = useState("OP-2422");
-  const [queueFilter, setQueueFilter] = useState<"Pursue" | "Watch" | "Archive">("Pursue");
+  const [activeId, setActiveId] = useState("");
+  const [opportunityItems, setOpportunityItems] = useState<Opportunity[]>([]);
+  const [feedTotal, setFeedTotal] = useState(0);
+  const [sourceCounts, setSourceCounts] = useState<{ source: string; count: number }[]>([]);
+  const [dataStatus, setDataStatus] = useState<"loading" | "live" | "fallback" | "error">("loading");
+  const [queueFilter, setQueueFilter] = useState<"All" | "Pursue" | "Watch" | "Archive">("All");
   const [stageFilter, setStageFilter] = useState("All");
   const [detailView, setDetailView] = useState<"intel" | "pursuit">("intel");
   const [briefOpen, setBriefOpen] = useState(false);
@@ -471,17 +622,81 @@ export default function Home() {
   const [passReason, setPassReason] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
-  const ranked = useMemo(() => opportunities.map((opportunity) => {
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadLiveOpportunities() {
+      try {
+        type OpportunityFeed = {
+          total?: number;
+          records?: PortalRecord[];
+          sources?: { source: string; count: number }[];
+        };
+        const fetchPage = async (offset: number) => {
+          const response = await fetch(`/api/opportunities?limit=500&offset=${offset}`, { signal: controller.signal });
+          if (!response.ok) throw new Error(`Opportunity feed returned ${response.status}`);
+          return response.json() as Promise<OpportunityFeed>;
+        };
+        const firstPage = await fetchPage(0);
+        const total = Math.max(0, Number(firstPage.total) || 0);
+        const remainingOffsets = Array.from(
+          { length: Math.max(0, Math.ceil(total / 500) - 1) },
+          (_item, index) => (index + 1) * 500,
+        );
+        const remainingPages = await Promise.all(remainingOffsets.map(fetchPage));
+        const records = [firstPage, ...remainingPages].flatMap((page) => page.records ?? []);
+        const live = records.filter(isPortalRecordVisible).map(portalRecordToOpportunity);
+        if (!live.length) {
+          setOpportunityItems([]);
+          setFeedTotal(total);
+          setSourceCounts(firstPage.sources ?? []);
+          setDataStatus("live");
+          return;
+        }
+        setOpportunityItems(live);
+        setActiveId(live[0].id);
+        setFeedTotal(total || live.length);
+        setSourceCounts(firstPage.sources ?? []);
+        setDataStatus("live");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setOpportunityItems([]);
+        setFeedTotal(0);
+        setSourceCounts([]);
+        setDataStatus("error");
+      }
+    }
+    void loadLiveOpportunities();
+    return () => controller.abort();
+  }, []);
+
+  const ranked = useMemo(() => opportunityItems.map((opportunity) => {
     const assessment = scoreOpportunity(opportunity);
     return { ...opportunity, assessment, score: assessment.overall };
-  }).sort((a, b) => b.score - a.score), []);
+  }).sort((a, b) => b.score - a.score), [opportunityItems]);
   const stages = ["All", ...Array.from(new Set(ranked.map((item) => item.stage)))];
-  const queued = ranked.filter((item) => item.assessment.decisionQueue === queueFilter);
+  const queued = queueFilter === "All" ? ranked : ranked.filter((item) => item.assessment.decisionQueue === queueFilter);
   const visible = stageFilter === "All" ? queued : queued.filter((item) => item.stage === stageFilter);
   const active = ranked.find((item) => item.id === activeId) ?? ranked[0];
   const pursuitPipeline = ranked.filter((item) => item.assessment.decisionQueue === "Pursue").reduce((total, item) => total + item.geotechRevenue[1], 0);
   const early = ranked.filter((item) => !["Tender open", "Pre-tender notice"].includes(item.stage)).length;
   const highPriority = ranked.filter((item) => item.assessment.decisionQueue === "Pursue").length;
+
+  if (!active) {
+    return (
+      <main className="app-shell">
+        <section className="hero-band">
+          <nav className="topbar" aria-label="Primary">
+            <div className="brand-lockup"><span className="brand-mark" aria-hidden="true">STS</span><div><p className="eyebrow">GeoFlow opportunity intelligence</p><h1>NSW Opportunity Radar</h1></div></div>
+          </nav>
+          <div className="hero-grid">
+            <div className="hero-copy"><p className="kicker">NSW construction and professional services radar</p><h2>Active NSW tenders only.</h2><p>Expired tenders, New Zealand opportunities, and every other Australian state are excluded from this view.</p></div>
+            <div className="command-panel" aria-label="Feed status"><div><span>Live opportunities</span><strong>0</strong><small>{dataStatus === "loading" ? "Loading live NSW opportunities" : dataStatus === "error" ? "Live feed is temporarily unavailable" : "No active NSW opportunities found"}</small></div></div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   const tones = ["gold", "green", "ink", "blue", "red", "green", "blue", "gold", "ink", "green"];
   const drivers = scoringWeights.map((driver, index) => ({
     ...driver,
@@ -530,7 +745,7 @@ export default function Home() {
             <span className="brand-mark" aria-hidden="true">STS</span>
             <div>
               <p className="eyebrow">GeoFlow opportunity intelligence</p>
-              <h1>Australia Opportunity Radar</h1>
+              <h1>NSW Opportunity Radar</h1>
             </div>
           </div>
           <div className="nav-actions">
@@ -546,11 +761,11 @@ export default function Home() {
         <div className="hero-grid">
           <div className="hero-copy">
             <p className="kicker">NSW construction and professional services radar</p>
-            <h2>Find Australian work before it becomes an obvious tender.</h2>
+            <h2>Find NSW geotechnical work before it becomes an obvious tender.</h2>
             <p>Link planning, funding, procurement, buyer, and contractor signals into one commercial project thread — then give each pursuit a next action.</p>
           </div>
           <div className="command-panel" aria-label="Today summary">
-            <div><span>Live opportunities</span><strong>{normalizedOpportunities.length}</strong><small>normalised records in the Australian demo slice</small></div>
+            <div><span>Live opportunities</span><strong>{feedTotal}</strong><small>{dataStatus === "live" ? `${opportunityItems.length} active NSW records loaded from D1` : "Loading live NSW opportunities"}</small></div>
             <div><span>Pursuit pipeline</span><strong>{shortMoney(pursuitPipeline)}</strong><small>upper fee range in the Pursue queue</small></div>
             <div><span>Early signal projects</span><strong>{early}</strong><small>before a formal tender appears</small></div>
             <div><span>Priority today</span><strong>{highPriority}</strong><small>auditable scores of 80 or above</small></div>
@@ -569,13 +784,17 @@ export default function Home() {
         <aside className="left-rail" aria-label="Intelligence filters">
           <div className="panel">
             <div className="section-heading"><span>Signal coverage</span><strong>Monitored sources</strong></div>
-            {["Government tenders", "Planning approvals", "Infrastructure pipelines", "Developer activity", "Private projects", "Relationship CRM"].map((item) => (
-              <label className="check-row" key={item}><input defaultChecked suppressHydrationWarning type="checkbox" /><span>{item}</span><small>Public</small></label>
+            {(sourceCounts.length ? sourceCounts.slice(0, 7).map(({ source, count }) => ({ item: portalSourceNames[source] ?? source, count: String(count) })) : [
+              { item: "buy.NSW", count: "Public" }, { item: "VendorPanel", count: "Public" },
+              { item: "AusTender", count: "Public" }, { item: "Australian Tenders", count: "Public" },
+              { item: "EstimateOne", count: "Metadata" }, { item: "TenderLink", count: "Metadata" }, { item: "BCI Central", count: "Metadata" },
+            ]).map(({ item, count }) => (
+              <label className="check-row" key={item}><input defaultChecked suppressHydrationWarning type="checkbox" /><span>{item}</span><small>{count}</small></label>
             ))}
           </div>
           <div className="panel">
             <div className="section-heading"><span>Commercial action</span><strong>Queue</strong></div>
-            <div className="stage-list">{(["Pursue", "Watch", "Archive"] as const).map((queue) => <button className={queue === queueFilter ? "active" : ""} key={queue} onClick={() => setQueueFilter(queue)} type="button">{queue}<span>{ranked.filter((item) => item.assessment.decisionQueue === queue).length}</span></button>)}</div>
+            <div className="stage-list">{(["All", "Pursue", "Watch", "Archive"] as const).map((queue) => <button className={queue === queueFilter ? "active" : ""} key={queue} onClick={() => setQueueFilter(queue)} type="button">{queue}<span>{queue === "All" ? ranked.length : ranked.filter((item) => item.assessment.decisionQueue === queue).length}</span></button>)}</div>
           </div>
           <div className="panel">
             <div className="section-heading"><span>Pipeline lens</span><strong>Stage</strong></div>
@@ -589,7 +808,7 @@ export default function Home() {
         <section className="opportunity-board" aria-label="Ranked opportunities">
           <div className="board-header">
             <div><p className="eyebrow">Decision queue</p><h3>{queueFilter} opportunities</h3><p className="board-description">Ten visible components separate geotechnical relevance from commercial fit, capability, readiness, relationships, and source quality.</p></div>
-            <span>{visible.length} shown</span>
+            <span>{visible.length} shown{feedTotal > opportunityItems.length ? ` of ${feedTotal}` : ""}</span>
           </div>
           <div className="queue-head"><span>Score</span><span>Opportunity</span><span>Value / timing</span></div>
           <div className="opportunity-list">
@@ -609,6 +828,7 @@ export default function Home() {
             <div className="detail-meta"><span>{active.id} <i>•</i> {active.opportunityType ?? "opportunity"}</span><b>{active.confidence}% confidence</b></div>
             <h3>{active.name}</h3>
             <p>{active.location} <i>•</i> {active.source} <i>•</i> last verified {active.lastVerified}</p>
+            {active.sourceUrl && <a href={active.sourceUrl} rel="noreferrer" target="_blank">Open public source ↗</a>}
           </div>
           <div className="detail-tabs" role="tablist" aria-label="Opportunity detail view">
             <button aria-selected={detailView === "intel"} className={detailView === "intel" ? "selected" : ""} onClick={() => setDetailView("intel")} role="tab" type="button">Intelligence</button>
