@@ -1,7 +1,16 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-08-20",
+  "reviewedAt": "2026-08-24",
   "portals": [
+    {
+      "id": "opencontractau",
+      "jurisdiction": "Australia",
+      "name": "opencontractau",
+      "url": "https://github.com/demitonapp/opencontractau",
+      "collectionStatus": "reference-only",
+      "accessMode": "community source-adapter repository",
+      "automationPolicy": "do not run or import as production infrastructure until the pinned revision, licence, source mappings, coverage and tests pass the upstream audit"
+    },
     {
       "id": "austender",
       "jurisdiction": "Commonwealth",
@@ -17,8 +26,18 @@
       "name": "buy NSW",
       "url": "https://buy.nsw.gov.au/notices",
       "collectionStatus": "implemented",
-      "accessMode": "public notice reports and historical API/export",
-      "automationPolicy": "prefer complete notice CSV reports; retain source URLs"
+      "accessMode": "public Notice Report CSV exports",
+      "automationPolicy": "import complete official Notice Report CSV exports; retain the report provenance and source notice URLs"
+    },
+    {
+      "id": "nsw-etendering-api",
+      "jurisdiction": "NSW",
+      "name": "NSW eTendering API",
+      "url": "https://github.com/NSW-eTendering/NSW-eTendering-API",
+      "collectionStatus": "historical-reference-only",
+      "accessMode": "official legacy API source and schema repository",
+      "lifecycle": "retired; not a current buy NSW collection endpoint",
+      "automationPolicy": "use as an auditable historical schema and adapter reference only; collect current notices through official buy NSW Notice Report exports"
     },
     {
       "id": "qtenders",
