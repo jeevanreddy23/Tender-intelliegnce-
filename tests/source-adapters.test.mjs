@@ -68,7 +68,7 @@ test("keeps project triggers as leads rather than pretending they are tenders", 
 });
 
 test("parses VendorPanel public RSS without authenticated document access", () => {
-  const [record] = parseVendorPanelRss(`
+  const [record, alternateOffsetRecord] = parseVendorPanelRss(`
     <rss><channel><item>
       <guid>VP-42</guid><link>https://vendorpanel.example/tenders/42</link>
       <title><![CDATA[Ground investigation services]]></title>
@@ -77,6 +77,11 @@ test("parses VendorPanel public RSS without authenticated document access", () =
         <b>Closing Date</b> : 01/Sep/2026 05:00 PM (UTC+10:00)<br />
         <b>Reference number</b> : VP522464]]></description>
       <pubDate>Sun, 23 Aug 2026 00:00:00 GMT</pubDate>
+    </item><item>
+      <guid>VP-43</guid><link>https://vendorpanel.example/tenders/43</link>
+      <title>Ground investigation services</title>
+      <description><![CDATA[<b>Tender Details : </b> Boreholes<br /><br />
+        <b>Closing Date</b> : 01/Sep/2026 05:00 PM (UTC+11:00)]]></description>
     </item></channel></rss>`, { extractedAt });
   assert.equal(record.source_id, "VP522464");
   assert.equal(record.buyer, "Example Council");
@@ -86,6 +91,7 @@ test("parses VendorPanel public RSS without authenticated document access", () =
   assert.equal(record.extraction_method, "rss");
   assert.equal(record.access_basis, "public");
   assert.deepEqual(record.documents, []);
+  assert.equal(alternateOffsetRecord.closing_date, "2026-09-01T06:00:00.000Z");
 });
 
 test("classifies known NSW VendorPanel councils without admitting New Zealand buyers", () => {
