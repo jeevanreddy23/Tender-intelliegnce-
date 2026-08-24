@@ -49,12 +49,14 @@ jobs:
           tests/ml-dataset-schema.test.mjs
           tests/opportunity-intelligence.test.mjs
 
-      - name: Test source ingestion
-        run: >-
-          node --test
-          tests/public-portal-collectors.test.mjs
-          tests/source-adapters.test.mjs
-          tests/source-registry.test.mjs
+      - name: Test public portal collectors
+        run: node --test tests/public-portal-collectors.test.mjs
+
+      - name: Test source adapters
+        run: node --test tests/source-adapters.test.mjs
+
+      - name: Test source registry
+        run: node --test tests/source-registry.test.mjs
 
       - name: Test product and AI pipeline
         run: >-
