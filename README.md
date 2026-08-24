@@ -9,6 +9,15 @@ It models how STS Geotechnics could monitor tenders, planning approvals,
 developer activity, consultants, builders, competitors, and proposal readiness
 in one daily operating view.
 
+## Agentic Development Harness
+
+All coding agents must begin with [`AGENTS.md`](AGENTS.md). Permanent product,
+architecture, data, security, UX, design, acceptance, and definition-of-done
+rules live under [`docs/`](docs/), with tender-specific behavioral contracts in
+[`docs/specs/`](docs/specs/). Development follows a bounded
+specification-to-evidence workflow rather than treating individual prompts as
+the complete specification.
+
 ## Reference Architecture
 
 ![STS tender intelligence reference architecture](docs/architecture.svg)
