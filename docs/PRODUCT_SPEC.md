@@ -59,6 +59,10 @@ pipelines. Clearly label them as leads. Do not represent them as open tenders.
 Store and expose expired, closed, awarded, and completed records separately for
 trend, buyer, competitor, supplier, scope, and pricing analysis.
 
+Win/loss post-mortems may use evidence-gated semantic validation under
+[`specs/win-loss-validation.md`](specs/win-loss-validation.md). They must show
+insufficient evidence rather than convert award correlations into causal claims.
+
 ## Functional requirements
 
 - Continuously collect permitted public or authorized data from approved

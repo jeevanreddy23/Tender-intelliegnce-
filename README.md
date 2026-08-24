@@ -193,6 +193,9 @@ signals:
   training-set background means
 - evidence thresholds and model-readiness gates that stop unsupported causal or
   win-probability claims
+- four-driver win/loss hypothesis generation with attributable-evidence gates
+  and model-agnostic NLI verdicts that remain explicitly non-causal; see
+  [`docs/specs/win-loss-validation.md`](docs/specs/win-loss-validation.md)
 
 The generated dashboard snapshot lives at
 `app/data/strategic-insights.json`. Rebuild it after refreshing the historical

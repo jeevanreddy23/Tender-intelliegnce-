@@ -67,6 +67,7 @@ jobs:
           tests/rendered-html.test.mjs
           tests/strategic-insights.test.mjs
           tests/tender-ai-pipeline.test.mjs
+          tests/win-loss-validation.test.mjs
 
       - name: Test Python orchestration
         run: python -m unittest discover -s python_tests -v

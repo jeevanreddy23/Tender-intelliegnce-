@@ -36,6 +36,9 @@ explain evidence but cannot clear a hard gate.
 - `lib/tender-ai-pipeline.js`: canonical persistence, deterministic prefilter,
   queueing, bounded AI calls, and schema validation.
 - `lib/opportunity-intelligence.js`: geotechnical and commercial scoring rules.
+- `lib/win-loss-validation.js`: offline/server-side evidence-gated historical
+  award hypotheses and model-agnostic NLI semantic validation; never
+  authoritative, client-side, or causal truth.
 - `worker/index.ts`: Cloudflare HTTP, Queue, Browser Run, cron, and API boundary.
 - `db/schema.ts` and `drizzle/`: persistent schema and forward migrations.
 - `src/opportunity/`: typed product contracts and auditable opportunity scoring.

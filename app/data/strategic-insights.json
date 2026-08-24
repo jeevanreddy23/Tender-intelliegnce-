@@ -21,6 +21,54 @@
     "suppliers": 84,
     "buyers": 30
   },
+  "winLossValidation": {
+    "method": "evidence-gated NLI semantic validation",
+    "status": "BLOCKED_BY_EVIDENCE",
+    "recordsEvaluated": 141,
+    "hypothesesGenerated": 564,
+    "nliEvaluationsRun": 0,
+    "verdictCounts": {
+      "supported": 0,
+      "contradicted": 0,
+      "insufficientEvidence": 564
+    },
+    "byDriver": {
+      "capability": {
+        "hypotheses": 141,
+        "readyForNli": 0,
+        "supported": 0,
+        "contradicted": 0,
+        "insufficientEvidence": 141
+      },
+      "price": {
+        "hypotheses": 141,
+        "readyForNli": 0,
+        "supported": 0,
+        "contradicted": 0,
+        "insufficientEvidence": 141
+      },
+      "relationship": {
+        "hypotheses": 141,
+        "readyForNli": 0,
+        "supported": 0,
+        "contradicted": 0,
+        "insufficientEvidence": 141
+      },
+      "timeline": {
+        "hypotheses": 141,
+        "readyForNli": 0,
+        "supported": 0,
+        "contradicted": 0,
+        "insufficientEvidence": 141
+      }
+    },
+    "reason": "Award-only records lack the selection, comparative price, capability-at-award, relationship-evaluation, and delivery-evaluation evidence required for NLI.",
+    "guardrails": [
+      "SUPPORTED means semantic support in the recorded evidence, not proof of causation.",
+      "Observed award scope does not prove fleet ownership, accreditation, bid price, or the buyer's decision rationale.",
+      "INSUFFICIENT_EVIDENCE is the required result when evidence gates or model thresholds fail."
+    ]
+  },
   "insights": [
     {
       "id": "bundle-value",
