@@ -40,8 +40,28 @@ jobs:
       - name: Build application
         run: npm run build
 
-      - name: Test JavaScript
-        run: node --test tests/*.test.mjs
+      - name: Test core intelligence
+        run: >-
+          node --test
+          tests/bid-decision.test.mjs
+          tests/contact-discovery.test.mjs
+          tests/historical-awards.test.mjs
+          tests/ml-dataset-schema.test.mjs
+          tests/opportunity-intelligence.test.mjs
+
+      - name: Test source ingestion
+        run: >-
+          node --test
+          tests/public-portal-collectors.test.mjs
+          tests/source-adapters.test.mjs
+          tests/source-registry.test.mjs
+
+      - name: Test product and AI pipeline
+        run: >-
+          node --test
+          tests/rendered-html.test.mjs
+          tests/strategic-insights.test.mjs
+          tests/tender-ai-pipeline.test.mjs
 
       - name: Test Python orchestration
         run: python -m unittest discover -s python_tests -v
