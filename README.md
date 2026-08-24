@@ -144,6 +144,13 @@ cannot be mistaken for a current collector. Other portals are explicitly
 marked adapter-required, manual-export-only, or legal-review-required so
 coverage is never overstated and authenticated access is never bypassed.
 
+The first-build adapter contract covers buy NSW, VendorPanel, eProcure,
+TenderLink, EstimateOne, AusTender and ICN. It standardises source records,
+separates potential project leads from procurement opportunities, and links
+multiple signals through `parent_project_id`. See
+[`docs/source-adapters.md`](docs/source-adapters.md) for access boundaries,
+canonical identity rules and the ingestion-before-AI processing order.
+
 ## Estimator Feedback
 
 The dashboard records Pursue, Watch, and Pass decisions through

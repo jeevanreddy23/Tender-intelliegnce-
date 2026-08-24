@@ -2,6 +2,10 @@ export type OpportunityType =
   | "tender"
   | "quotation"
   | "eoi"
+  | "rfi"
+  | "rfp"
+  | "proposed-opportunity"
+  | "scheme"
   | "grant"
   | "project-pipeline"
   | "planning-application"
@@ -52,7 +56,7 @@ export interface OpportunityDocument {
 export interface OpportunityProvenance {
   fetchedAt: string;
   sourcePublishedAt?: string;
-  extractionMethod: "api" | "rss" | "csv" | "html" | "manual";
+  extractionMethod: "api" | "rss" | "csv" | "html" | "email" | "manual";
   confidence: number;
   accessMethod?: string;
   termsChecked?: boolean;
@@ -63,6 +67,8 @@ export interface AustraliaOpportunity {
   sourceName: string;
   sourceUrl: string;
   sourceOpportunityId?: string;
+  duplicateGroupId?: string;
+  parentProjectId?: string;
 
   title: string;
   description?: string;
@@ -72,8 +78,13 @@ export interface AustraliaOpportunity {
   locations: OpportunityLocation[];
 
   buyer?: string;
+  buyerAbn?: string;
+  agency?: string;
+  clientType?: string;
   developer?: string;
   principalContractor?: string;
+  projectName?: string;
+  projectType?: string;
 
   sectors: string[];
   categories: string[];
@@ -81,17 +92,31 @@ export interface AustraliaOpportunity {
 
   publishedAt?: string;
   closesAt?: string;
+  awardedAt?: string;
+  contractStartsAt?: string;
+  contractEndsAt?: string;
   expectedProcurementAt?: string;
   expectedConstructionAt?: string;
 
   estimatedValueMin?: number;
   estimatedValueMax?: number;
+  contractValue?: number;
   currency?: "AUD";
+
+  procurementType?: string;
+  tenderMethod?: string;
+  successfulSupplier?: string;
+  supplierAbn?: string;
+  geotechTier?: "A" | "B" | "C";
+  geotechScore?: number;
+  recordKind?: "opportunity" | "potential_geotech_lead" | "archive";
+  sourceProgram?: string;
 
   stage: OpportunityStage;
   eligibility?: string[];
   mandatoryRequirements?: string[];
   documents?: OpportunityDocument[];
+  addenda?: OpportunityDocument[];
 
   provenance: OpportunityProvenance;
 }

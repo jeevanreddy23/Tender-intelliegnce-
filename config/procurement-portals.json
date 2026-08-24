@@ -107,9 +107,45 @@
       "jurisdiction": "Local",
       "name": "VendorPanel",
       "url": "https://www.vendorpanel.com.au/",
-      "collectionStatus": "manual-export-only",
-      "accessMode": "authenticated member portal",
-      "automationPolicy": "use user-authorised exports; never bypass access controls or automate login"
+      "collectionStatus": "public-feed-adapter",
+      "accessMode": "public marketplace RSS plus user-authorised notification email",
+      "automationPolicy": "detect public opportunities through RSS; fetch permitted public metadata only; never automate login or authenticated documents"
+    },
+    {
+      "id": "eprocure",
+      "jurisdiction": "Local",
+      "name": "eProcure",
+      "url": "https://www.eprocure.com.au/",
+      "collectionStatus": "integration-access-required",
+      "accessMode": "approved API integration with public-page fallback",
+      "automationPolicy": "request supplier integration access before API collection; restrict fallback collection to permitted public opportunity metadata"
+    },
+    {
+      "id": "tenderlink",
+      "jurisdiction": "Local",
+      "name": "TenderLink",
+      "url": "https://www.tenderlink.com/",
+      "collectionStatus": "notification-adapter",
+      "accessMode": "user-authorised notification email and public metadata",
+      "automationPolicy": "parse authorised notifications; do not automate login, registered documents, Q&A, addenda or submissions"
+    },
+    {
+      "id": "estimateone",
+      "jurisdiction": "Private",
+      "name": "EstimateOne",
+      "url": "https://estimateone.com/",
+      "collectionStatus": "lead-signal-adapter",
+      "accessMode": "authorised alerts and permitted public listings",
+      "automationPolicy": "store builder projects as potential leads; use authorised account functions and manual documents without authenticated scraping"
+    },
+    {
+      "id": "icn",
+      "jurisdiction": "Australia",
+      "name": "ICN Gateway",
+      "url": "https://gateway.icn.org.au/",
+      "collectionStatus": "public-metadata-adapter",
+      "accessMode": "public project and work-package metadata",
+      "automationPolicy": "monitor public parent projects and packages; treat non-procurement project triggers as leads rather than tenders"
     }
   ]
 }
