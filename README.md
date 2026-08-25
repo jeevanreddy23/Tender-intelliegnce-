@@ -196,6 +196,14 @@ signals:
 - four-driver win/loss hypothesis generation with attributable-evidence gates
   and model-agnostic NLI verdicts that remain explicitly non-causal; see
   [`docs/specs/win-loss-validation.md`](docs/specs/win-loss-validation.md)
+- structured NLI premises that label tender, regulatory, STS, winner, and
+  constraint context; category fallbacks remain non-evidentiary, capability
+  claims require dates, and repeated neutral output creates review work rather
+  than autonomous collection or score changes
+- authenticated DeepSeek V4 strategy synthesis for verified NSW tenders above
+  AUD 500,000, gated on three `SUPPORTED` NLI findings above 90% and returned
+  as a strictly validated, human-reviewed four-part memo; see
+  [`docs/specs/strategy-synthesis.md`](docs/specs/strategy-synthesis.md)
 
 The generated dashboard snapshot lives at
 `app/data/strategic-insights.json`. Rebuild it after refreshing the historical

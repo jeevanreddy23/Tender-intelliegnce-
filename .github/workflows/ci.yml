@@ -65,6 +65,7 @@ jobs:
         run: >-
           node --test
           tests/rendered-html.test.mjs
+          tests/strategy-synthesis.test.mjs
           tests/strategic-insights.test.mjs
           tests/tender-ai-pipeline.test.mjs
           tests/win-loss-validation.test.mjs

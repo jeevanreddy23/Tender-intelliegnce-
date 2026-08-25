@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   buildWinLossPremise,
+  buildPremiseEvidenceReviewPlan,
   buildWinLossValidationSummary,
   evaluateWinLossRecord,
   runWinLossNli,
@@ -20,6 +21,7 @@ const award = {
 };
 
 function evidence(driver, kind, excerpt, sourceText) {
+  const datedCapability = ["our_capability", "winner_capability"].includes(kind);
   return {
     driver,
     kind,
@@ -27,6 +29,7 @@ function evidence(driver, kind, excerpt, sourceText) {
     sourceText,
     sourceUrl: "https://procurement.example/evaluation/AWARD-1",
     observedAt: "2026-08-25T00:00:00.000Z",
+    ...(datedCapability ? { effectiveAt: "2025-Q3", activeAtRelevantDate: true } : {}),
   };
 }
 
@@ -41,6 +44,65 @@ test("rejects evidence that cannot be verified against its attributed source tex
   assert.equal(premise.acceptedEvidence.length, 0);
   assert.deepEqual(premise.rejectedEvidence, [{ index: 0, reason: "evidence excerpt was not found in the supplied source text" }]);
   assert.doesNotMatch(premise.premise, /jack-up rig/i);
+});
+
+test("builds labelled structured context without promoting inferred scope into NLI", () => {
+  const capabilitySource = "At Q3 2025, STS operated two sonic rigs. The awarded supplier operated a marine jack-up rig at Q3 2025.";
+  const standardSource = "The tender required investigation in accordance with AS 1726.";
+  const premise = buildWinLossPremise({
+    ...award,
+    scope: "Over-water boreholes to AS 1726 with an integrated field and laboratory package.",
+    location: "Newcastle Harbour, NSW",
+    turnkeyRequired: true,
+  }, [
+    evidence("capability", "our_capability", "At Q3 2025, STS operated two sonic rigs.", capabilitySource),
+    evidence("capability", "winner_capability", "The awarded supplier operated a marine jack-up rig at Q3 2025.", capabilitySource),
+    evidence("capability", "mandatory_standard", "The tender required investigation in accordance with AS 1726.", standardSource),
+  ], {
+    inferredScopeCandidate: "Likely requires unverified category-based acid sulfate testing.",
+  });
+
+  assert.match(premise.premise, /\[TENDER_SCOPE\]\[RECORDED\]/);
+  assert.match(premise.premise, /\[OUR_ASSETS\]\[VERIFIED_AT_RELEVANT_DATE\]/);
+  assert.match(premise.premise, /\[WINNER_ASSETS\]\[VERIFIED_AT_RELEVANT_DATE\]/);
+  assert.match(premise.premise, /\[REGULATORY\]\[RECORDED\].*AS 1726/);
+  assert.doesNotMatch(premise.premise, /unverified category-based acid sulfate/i);
+  assert.deepEqual(premise.structuredPremise.tenderScope.inferenceCandidate, {
+    status: "INFERENCE_CANDIDATE",
+    value: "Likely requires unverified category-based acid sulfate testing.",
+    allowedForNli: false,
+  });
+  assert.equal(premise.structuredPremise.guardrails.scoreMutationAllowed, false);
+  assert.ok(premise.structuredPremise.ourAssets.claims.every((item) => !Object.hasOwn(item, "sourceText")));
+});
+
+test("requires dated capability evidence and turns repeated neutral results into review only", () => {
+  const sourceText = "The supplier operated a specialist rig.";
+  const premise = buildWinLossPremise({ ...award, scope: null, description: null }, [{
+    driver: "capability",
+    kind: "winner_capability",
+    excerpt: sourceText,
+    sourceText,
+    sourceUrl: "https://procurement.example/evaluation/AWARD-1",
+  }], { inferredScopeCandidate: "Category-derived drilling suggestion." });
+  assert.equal(premise.acceptedEvidence.length, 0);
+  assert.match(premise.rejectedEvidence[0].reason, /observation date or quarter/i);
+  assert.equal(premise.structuredPremise.tenderScope.status, "UNKNOWN");
+
+  const postdated = buildWinLossPremise({ ...award, awardDate: "2025-01-15" }, [
+    evidence("capability", "winner_capability", sourceText, sourceText),
+  ]);
+  assert.equal(postdated.acceptedEvidence.length, 0);
+  assert.match(postdated.rejectedEvidence[0].reason, /post-dates the relevant tender or award date/i);
+
+  const threeNeutral = buildPremiseEvidenceReviewPlan(premise, ["neutral", "neutral", "neutral"]);
+  assert.equal(threeNeutral.status, "NO_ACTION");
+  const fourNeutral = buildPremiseEvidenceReviewPlan(premise, ["neutral", "neutral", "neutral", "neutral"]);
+  assert.equal(fourNeutral.status, "EVIDENCE_REVIEW_REQUIRED");
+  assert.ok(fourNeutral.missingSections.includes("tender_scope"));
+  assert.equal(fourNeutral.autoCollectionAllowed, false);
+  assert.equal(fourNeutral.nliRerunAllowed, false);
+  assert.equal(fourNeutral.scoreMutationAllowed, false);
 });
 
 test("blocks award-only hypotheses before an NLI model is called", async () => {
@@ -77,8 +139,10 @@ test("returns supported and contradicted only after evidence and NLI gates pass"
   const calledDrivers = [];
   const result = await runWinLossNli(award, {
     evidence: evidenceItems,
-    evaluateNli: async ({ driver }) => {
+    evaluateNli: async ({ driver, structuredPremise }) => {
       calledDrivers.push(driver);
+      assert.equal(structuredPremise.tenderScope.status, "RECORDED");
+      assert.equal(structuredPremise.guardrails.causalClaimAllowed, false);
       return driver === "capability"
         ? { scores: { entailment: 0.94, contradiction: 0.03, neutral: 0.03 }, model: "test-nli" }
         : { scores: { entailment: 0.04, contradiction: 0.91, neutral: 0.05 }, model: "test-nli" };
@@ -108,6 +172,8 @@ test("returns supported and contradicted only after evidence and NLI gates pass"
   assert.equal(summary.verdictCounts.supported, 1);
   assert.equal(summary.verdictCounts.contradicted, 1);
   assert.equal(summary.verdictCounts.insufficientEvidence, 2);
+  assert.equal(summary.topSupportedHypotheses.length, 1);
+  assert.equal(summary.topSupportedHypotheses[0].causalClaimAllowed, false);
 });
 
 test("keeps low-separation NLI output insufficient even when evidence is complete", () => {

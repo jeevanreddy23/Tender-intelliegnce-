@@ -1,9 +1,11 @@
 # Cloudflare and DeepSeek processing
 
-Portal adapters remain the source of truth. DeepSeek receives only bounded
-title, description and scope text after deterministic prefiltering. Its output
-is stored as a separate analysis record and cannot overwrite source identity,
-buyer, dates, value, supplier, URL, documents or status.
+Portal adapters remain the source of truth. The first-pass classifier receives
+only bounded title, description and scope text after deterministic
+prefiltering. The optional strategy endpoint receives a server-resolved current
+tender plus three attributable NLI-supported historical findings. DeepSeek
+output remains derived analysis and cannot overwrite source identity, buyer,
+dates, value, supplier, URL, documents or status.
 
 The bounded `raw_source` snapshot is retained inside the authoritative D1 JSON
 record for audit purposes but is excluded from the DeepSeek prompt. Source
@@ -43,6 +45,20 @@ empty or truncated content, so both conditions are treated as retryable
 failures. DeepSeek's tool calling is deliberately not used for portal fetching;
 the application executes each approved adapter itself.
 
+The authenticated `POST /api/strategy` path is separate from ingestion. The
+browser sends only `opportunityId`; the server resolves the authoritative D1
+record and the checked-in NLI snapshot. It requires a verified NSW opportunity,
+value greater than AUD 500,000, and at least three `SUPPORTED` findings with
+confidence greater than 90%. It selects the top three, makes one request with
+thinking enabled, and validates a four-part memo. There is no automatic retry,
+and private reasoning is neither requested for display nor returned to the UI.
+See [`specs/strategy-synthesis.md`](specs/strategy-synthesis.md).
+
+Current DeepSeek model IDs are `deepseek-v4-flash` and `deepseek-v4-pro`.
+Legacy `deepseek-chat` and `deepseek-reasoner` IDs are not used; DeepSeek's
+[official API guide](https://api-docs.deepseek.com/guides/function_calling/)
+marks those aliases as deprecated.
+
 ## Required Cloudflare configuration
 
 Create the queue and dead-letter queue before enabling their bindings:
@@ -59,6 +75,7 @@ TENDER_AI_QUEUE_NAME=sts-tender-ai
 TENDER_AI_DLQ_NAME=sts-tender-ai-dlq
 TENDER_AI_CRON=0 */3 * * *
 DEEPSEEK_MODEL=deepseek-v4-flash
+DEEPSEEK_STRATEGY_MODEL=deepseek-v4-flash
 ```
 
 Configure secrets directly on the Cloudflare Worker. Never place either value
@@ -78,6 +95,13 @@ An unchanged record that already has a validated analysis is not queued again.
 If publishing to Queues fails, its state is reset to `pending`; the scheduled
 handler can safely replay it later rather than losing the tender or repeatedly
 charging the model for unchanged content.
+
+`DEEPSEEK_STRATEGY_MODEL` is a non-secret Worker variable. The strategy endpoint
+reuses the `DEEPSEEK_API_KEY` managed secret. The default Flash model uses
+high-effort thinking; `deepseek-v4-pro` can be selected after a reviewed cost
+and quality evaluation. Provider pricing is operationally variable and should
+be checked against the [official pricing page](https://api-docs.deepseek.com/quick_start/pricing)
+before changing thresholds or call volume.
 
 Apply D1 migrations before enabling ingestion:
 

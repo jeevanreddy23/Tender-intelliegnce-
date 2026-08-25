@@ -52,12 +52,41 @@ text is used for validation but is not copied into the structured verdict.
 Protected award and source fields remain authoritative and separate from the
 derived NLI analysis.
 
+Capability evidence for either STS or a competitor must include an observation
+date, an effective date or quarter, and an explicit flag that the source
+supports activity at the relevant tender date. Effective periods after the
+tender or award date are rejected. A current website statement cannot silently
+be treated as proof that an asset existed at the historical tender date.
+
+## Structured premise contract
+
+The premise builder emits both a labelled text premise for the cross-encoder
+and a structured object with these sections:
+
+- award identity;
+- recorded tender scope;
+- regulatory requirements;
+- timeline, turnkey, and location constraints;
+- timestamped STS capabilities;
+- timestamped awarded-supplier capabilities;
+- attributable selection/comparison evidence.
+
+Every section carries a status. Missing information is `UNKNOWN`, not `None
+specified`. A category-based scope suggestion may be retained as
+`INFERENCE_CANDIDATE`, but it has `allowedForNli: false` and is excluded from
+the text premise, hypotheses, and verdict gates.
+
+Labels such as `[TENDER_SCOPE]`, `[OUR_ASSETS]`, and `[WINNER_ASSETS]` clarify
+which party and source context a claim belongs to. They do not make a claim
+true; the same URL, excerpt, source-text verification, and timestamp rules still
+apply.
+
 ## NLI adapter contract
 
 `lib/win-loss-validation.js` accepts an injected evaluator. A model adapter
 receives the premise, hypothesis, stable premise hash, driver, hypothesis ID,
-and prompt version. It returns normalized entailment, contradiction, and
-neutral scores plus its model identifier.
+prompt version, and the equivalent structured premise. It returns normalized
+entailment, contradiction, and neutral scores plus its model identifier.
 
 Default acceptance requires:
 
@@ -89,9 +118,24 @@ attributable evaluation evidence.
 - Do not turn `SUPPORTED` into “proven cause.”
 - Do not add a win-score multiplier until bidder/outcome data is representative
   and a reviewed, calibrated evaluation demonstrates predictive value.
+- Do not deduct opportunity-score points from NLI output. Current-tender
+  capability fit requires a separate deterministic, evidence-backed rule and a
+  calibrated product evaluation.
 - Do not use NLI to clear mandatory, lifecycle, margin, resource, or human
   approval gates.
 - Do not access restricted evaluation documents without authorization.
+- Do not launch a crawler or rerun NLI merely because repeated output is
+  neutral. Four or more neutral labels with unknown premise sections may create
+  an evidence-review plan for an approved source; collection and rerun remain
+  explicit reviewed actions.
+
+## Downstream strategy use
+
+Only `SUPPORTED` findings with confidence strictly greater than `0.90` may be
+considered by the optional DeepSeek synthesis layer. That additional threshold
+does not change this validator's `0.85` acceptance threshold. Strategy
+eligibility and output requirements are defined in
+[`strategy-synthesis.md`](strategy-synthesis.md).
 
 ## Evaluation
 
@@ -99,3 +143,9 @@ Tests must cover supported, contradicted, neutral/uncertain, missing-evidence,
 model-failure, and fabricated-excerpt cases. They must verify that incomplete
 records do not invoke the model, source text is not emitted in verdicts, and
 every verdict keeps `causalClaimAllowed: false`.
+
+Tests for the structured builder must also cover section labels, unknown
+handling, exclusion of inferred fallback scope, dated capability evidence, and
+the non-automatic repeated-neutral review plan. Any claimed accuracy lift must
+be demonstrated on a representative labelled evaluation set; no fixed uplift
+is assumed by the product.

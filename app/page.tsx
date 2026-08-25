@@ -40,6 +40,7 @@ type Opportunity = {
   risks: { risk: string; response: string; level: "High" | "Medium" | "Low" }[];
   nextAction: string;
   sourceUrl?: string;
+  recordKind?: string;
   opportunityType?: OpportunityType;
   jurisdiction?: Jurisdiction;
   normalizedStage?: OpportunityStage;
@@ -86,6 +87,22 @@ type PortalRecord = {
     confidence?: number;
   } | null;
   updated_at?: string;
+};
+
+type StrategyMemoSection = {
+  recommendation: string;
+  evidence_hypothesis_ids: string[];
+  checks_before_bid: string[];
+};
+
+type StrategyMemo = {
+  fleet_equipment: StrategyMemoSection;
+  pricing_packaging: StrategyMemoSection;
+  risk_mitigation: StrategyMemoSection;
+  competitor_counter: StrategyMemoSection;
+  limitations: string[];
+  human_review_required: true;
+  causal_claim_allowed: false;
 };
 
 const demoOpportunities: Opportunity[] = [
@@ -546,6 +563,7 @@ function portalRecordToOpportunity(record: PortalRecord): Opportunity {
       ? `Review the ${record.analysis.recommended_action.replaceAll("_", " ")} recommendation and confirm it against the source listing.`
       : "Open the source listing and confirm scope, dates, and eligibility.",
     sourceUrl: record.source_url,
+    recordKind: record.deterministic_record_kind ?? undefined,
     opportunityType: portalOpportunityType(record.procurement_type),
     jurisdiction: state,
     normalizedStage: stage === "Tender open" ? "open" : stage === "Closed" ? "evaluation" : "pre-procurement",
@@ -622,6 +640,9 @@ export default function Home() {
   const [feedbackChoice, setFeedbackChoice] = useState<"Pursue" | "Watch" | "Pass" | null>(null);
   const [passReason, setPassReason] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [strategyStatus, setStrategyStatus] = useState<"idle" | "generating" | "complete" | "error">("idle");
+  const [strategyMemo, setStrategyMemo] = useState<StrategyMemo | null>(null);
+  const [strategyError, setStrategyError] = useState("");
 
   useEffect(() => {
     const controller = new AbortController();
@@ -719,6 +740,16 @@ export default function Home() {
   });
   const snapshotDate = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(strategicSnapshot.generatedAt));
   const bundledBuyerSegment = strategicSnapshot.buyerSegments.find((segment) => segment.label === "Bundled program buyers");
+  const supportedStrategyFindings = (strategicSnapshot.winLossValidation.topSupportedHypotheses as { verdict: string; confidence: number }[])
+    .filter((finding) => finding.verdict === "SUPPORTED" && Number(finding.confidence) > 0.90)
+    .length;
+  const strategyBlockReason = active.recordKind !== "opportunity"
+    ? "A verified active tender is required; early leads are not sent to DeepSeek."
+    : active.value <= 500_000
+      ? "Contract value must be greater than AUD 500,000."
+      : supportedStrategyFindings < 3
+        ? `${supportedStrategyFindings} of 3 evidence-supported NLI findings above 90% confidence are ready.`
+        : null;
 
   async function submitFeedback(decision: "Pursue" | "Watch" | "Pass", reasonCategory?: string) {
     setFeedbackChoice(decision);
@@ -736,6 +767,30 @@ export default function Home() {
       }),
     });
     setFeedbackStatus(response.ok ? "saved" : "error");
+  }
+
+  async function generateStrategy() {
+    if (strategyBlockReason || strategyStatus === "generating") return;
+    setStrategyStatus("generating");
+    setStrategyMemo(null);
+    setStrategyError("");
+    try {
+      const response = await fetch("/api/strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opportunityId: active.id }),
+      });
+      const payload = await response.json() as { memo?: StrategyMemo; error?: string; reasons?: { message?: string }[] };
+      if (!response.ok || !payload.memo) {
+        const reason = payload.reasons?.map(({ message }) => message).filter(Boolean).join(" ");
+        throw new Error(reason || payload.error || "Strategy generation failed.");
+      }
+      setStrategyMemo(payload.memo);
+      setStrategyStatus("complete");
+    } catch (error) {
+      setStrategyError(error instanceof Error ? error.message : "Strategy generation failed.");
+      setStrategyStatus("error");
+    }
   }
 
   return (
@@ -815,7 +870,7 @@ export default function Home() {
           <div className="opportunity-list">
             {visible.length === 0 && <div className="queue-empty"><strong>No opportunities in this view</strong><span>Change the queue or stage filter to inspect other records.</span></div>}
             {visible.map((item) => (
-              <button className={`opportunity-row ${item.id === active.id ? "selected" : ""}`} key={item.id} onClick={() => { setActiveId(item.id); setDetailView("intel"); setFeedbackChoice(null); setFeedbackStatus("idle"); setPassReason(""); }} type="button">
+              <button className={`opportunity-row ${item.id === active.id ? "selected" : ""}`} key={item.id} onClick={() => { setActiveId(item.id); setDetailView("intel"); setFeedbackChoice(null); setFeedbackStatus("idle"); setPassReason(""); setStrategyStatus("idle"); setStrategyMemo(null); setStrategyError(""); }} type="button">
                 <span className={`score-pill ${scoreClass(item.score)}`}>{item.score}<small>score</small></span>
                 <span className="opportunity-main"><strong>{item.name}</strong><small>{item.location} <i>•</i> {item.stage} <i>•</i> {item.opportunityType ?? "project signal"}</small><em>{item.sector} <i>•</i> {item.source}</em></span>
                 <span className="revenue-range"><strong>{shortMoney(item.geotechRevenue[0])}-{shortMoney(item.geotechRevenue[1])}</strong><small>{item.closeDate}</small></span>
@@ -893,7 +948,7 @@ export default function Home() {
 
       <section className="strategic-panel panel" aria-label="Historical procurement strategy">
         <div className="board-header">
-          <div><p className="eyebrow">Award pattern mining</p><h3>Strategic win drivers</h3><p className="board-description">Observed scope bundles, buyer concentration, and service associations from attributable Commonwealth and NSW award records.</p></div>
+          <div><p className="eyebrow">Award pattern mining</p><h3>Strategic evidence patterns</h3><p className="board-description">Observed scope bundles, buyer concentration, and service associations from attributable Commonwealth and NSW award records.</p></div>
           <span>Snapshot {snapshotDate}</span>
         </div>
         <div className="strategic-metrics">
@@ -920,6 +975,39 @@ export default function Home() {
             <div className="model-gate"><span>Win model</span><b>Data gated</b><small>{strategicSnapshot.modelReadiness.reason}</small></div>
           </aside>
         </div>
+        <section className={`strategy-synthesis ${strategyBlockReason ? "blocked" : "ready"}`} aria-label="Strategic Narrative" aria-live="polite">
+          <div className="strategy-synthesis-head">
+            <div><span className="eyebrow">The why and how</span><strong>Strategic Narrative</strong><p>DeepSeek converts the top three evidence-supported historical findings into a four-point memo for the selected tender.</p></div>
+            <button disabled={Boolean(strategyBlockReason) || strategyStatus === "generating"} onClick={() => void generateStrategy()} type="button">
+              {strategyStatus === "generating" ? "Generating strategy…" : "Generate DeepSeek strategy"}
+            </button>
+          </div>
+          <div className="strategy-gates">
+            <span>Value gate <b>{active.value > 500_000 ? "Ready" : "Blocked"}</b></span>
+            <span>NLI evidence <b>{supportedStrategyFindings}/3 ready</b></span>
+            <span>Decision <b>Human review required</b></span>
+          </div>
+          {strategyBlockReason && <p className="strategy-state"><strong>DeepSeek not called.</strong> {strategyBlockReason}</p>}
+          {strategyStatus === "error" && <p className="strategy-state error"><strong>Strategy unavailable.</strong> {strategyError}</p>}
+          {strategyMemo && (
+            <div className="strategy-memo">
+              {([
+                ["Fleet & equipment", strategyMemo.fleet_equipment],
+                ["Pricing & packaging", strategyMemo.pricing_packaging],
+                ["Risk mitigation", strategyMemo.risk_mitigation],
+                ["Competitor counter", strategyMemo.competitor_counter],
+              ] as const).map(([label, section]) => (
+                <article key={label}>
+                  <span>{label}</span>
+                  <strong>{section.recommendation}</strong>
+                  <ul>{section.checks_before_bid.map((check) => <li key={check}>{check}</li>)}</ul>
+                  <small>Evidence refs: {section.evidence_hypothesis_ids.join(", ")}</small>
+                </article>
+              ))}
+              <div className="strategy-limitations"><strong>Review limits</strong><ul>{strategyMemo.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul></div>
+            </div>
+          )}
+        </section>
         <div className="strategy-foot"><span>Source: {strategicSnapshot.source}</span><strong>Association is not causation · award share is not bidder win rate</strong></div>
       </section>
 

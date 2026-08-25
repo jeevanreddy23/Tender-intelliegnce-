@@ -9,6 +9,7 @@ const tenderAiDeadLetterQueueName = process.env.TENDER_AI_DLQ_NAME?.trim() || "s
 const tenderAiCron = process.env.TENDER_AI_CRON?.trim() || "0 */3 * * *";
 const tenderSourceCron = process.env.TENDER_SOURCE_CRON?.trim() || "15 18 * * *";
 const deepSeekModel = process.env.DEEPSEEK_MODEL?.trim() || "deepseek-v4-flash";
+const deepSeekStrategyModel = process.env.DEEPSEEK_STRATEGY_MODEL?.trim() || "deepseek-v4-flash";
 
 const { d1, r2 } = hostingConfig;
 
@@ -20,6 +21,7 @@ const localBindingConfig = {
   compatibility_flags: ["nodejs_compat"],
   vars: {
     DEEPSEEK_MODEL: deepSeekModel,
+    DEEPSEEK_STRATEGY_MODEL: deepSeekStrategyModel,
     TENDER_SOURCE_CRON: tenderSourceCron,
   },
   browser: { binding: "BROWSER" },

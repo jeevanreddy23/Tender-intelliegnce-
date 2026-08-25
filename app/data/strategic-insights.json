@@ -62,6 +62,7 @@
         "insufficientEvidence": 141
       }
     },
+    "topSupportedHypotheses": [],
     "reason": "Award-only records lack the selection, comparative price, capability-at-award, relationship-evaluation, and delivery-evaluation evidence required for NLI.",
     "guardrails": [
       "SUPPORTED means semantic support in the recorded evidence, not proof of causation.",

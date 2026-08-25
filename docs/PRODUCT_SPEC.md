@@ -62,6 +62,15 @@ trend, buyer, competitor, supplier, scope, and pricing analysis.
 Win/loss post-mortems may use evidence-gated semantic validation under
 [`specs/win-loss-validation.md`](specs/win-loss-validation.md). They must show
 insufficient evidence rather than convert award correlations into causal claims.
+Structured premises may contrast recorded tender, STS, and awarded-supplier
+context only when every capability claim is attributable and dated. Inferred
+category scope remains outside NLI and opportunity scoring.
+
+For a verified high-value NSW tender, an authenticated bid manager may request
+a four-part DeepSeek Strategic Narrative under
+[`specs/strategy-synthesis.md`](specs/strategy-synthesis.md). The action remains
+blocked unless the value and evidence gates pass. Its recommendations require
+human review and cannot modify source truth or represent a win probability.
 
 ## Functional requirements
 
@@ -92,7 +101,8 @@ insufficient evidence rather than convert award correlations into causal claims.
 
 The repository currently provides public collectors, canonical normalization,
 deterministic geotechnical tiering, D1 persistence, optional DeepSeek analysis,
-and an active NSW API guard. Three-feed persistence, complete source
+an evidence-gated DeepSeek strategy endpoint, and an active NSW API guard.
+Three-feed persistence, complete source
 reconciliation, explicit NEEDS_VERIFICATION lifecycle storage, canonical
 multi-source opportunity records, and labelled evaluation datasets remain
 target capabilities and require reviewed implementation work.

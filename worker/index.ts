@@ -61,6 +61,7 @@ interface Env {
   BROWSER?: BrowserRunBinding;
   DEEPSEEK_API_KEY?: string;
   DEEPSEEK_MODEL?: string;
+  DEEPSEEK_STRATEGY_MODEL?: string;
   TENDER_SOURCE_CRON?: string;
   INGESTION_TOKEN?: string;
   IMAGES: {
@@ -266,6 +267,7 @@ const worker = {
         deepseek: Boolean(env.DEEPSEEK_API_KEY),
         ingestion_auth: Boolean(env.INGESTION_TOKEN),
         model: env.DEEPSEEK_MODEL ?? tenderAiConfiguration.defaultModel,
+        strategy_model: env.DEEPSEEK_STRATEGY_MODEL ?? "deepseek-v4-flash",
         prompt_version: tenderAiConfiguration.promptVersion,
         source_cron: env.TENDER_SOURCE_CRON ?? sourceCollectionConfiguration.cron,
       });

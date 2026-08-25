@@ -37,8 +37,12 @@ explain evidence but cannot clear a hard gate.
   queueing, bounded AI calls, and schema validation.
 - `lib/opportunity-intelligence.js`: geotechnical and commercial scoring rules.
 - `lib/win-loss-validation.js`: offline/server-side evidence-gated historical
-  award hypotheses and model-agnostic NLI semantic validation; never
-  authoritative, client-side, or causal truth.
+  award hypotheses, party-labelled structured premises, non-automatic evidence
+  review plans, and model-agnostic NLI semantic validation; never authoritative,
+  client-side, causal truth, or an opportunity-score mutator.
+- `lib/strategy-synthesis.js`: server-side eligibility, prompt, and response
+  validation for a bounded DeepSeek memo built from authoritative D1 context
+  and server-owned NLI findings.
 - `worker/index.ts`: Cloudflare HTTP, Queue, Browser Run, cron, and API boundary.
 - `db/schema.ts` and `drizzle/`: persistent schema and forward migrations.
 - `src/opportunity/`: typed product contracts and auditable opportunity scoring.
@@ -65,6 +69,9 @@ The production runtime is a Cloudflare Worker with:
 
 API, RSS, CSV, or ordinary public HTTP sources are preferred over Browser Run.
 External collection must not execute inside user-facing request paths.
+DeepSeek strategy synthesis is an authenticated user-triggered analysis path,
+not a source collector. The browser supplies only an opportunity ID; the server
+resolves values and evidence before deciding whether a model call is allowed.
 
 ## Source adapter contract
 
