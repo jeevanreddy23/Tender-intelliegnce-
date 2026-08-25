@@ -467,6 +467,16 @@ const portalSourceNames: Record<string, string> = {
   "bci-central": "BCI Central",
 };
 
+const portalSourceUrls: Record<string, string> = {
+  "buy-nsw": "https://buy.nsw.gov.au/",
+  vendorpanel: "https://www.vendorpanel.com.au/",
+  austender: "https://www.tenders.gov.au/",
+  "australian-tenders": "https://www.australiantenders.com.au/",
+  estimateone: "https://estimateone.com/",
+  tenderlink: "https://illion.tenderlink.com/",
+  "bci-central": "https://www.bcicentral.com/find-projects/",
+};
+
 function portalOpportunityType(value?: string | null): OpportunityType {
   const type = String(value ?? "").toLowerCase();
   if (type.includes("project pipeline")) return "project-pipeline";
@@ -840,12 +850,20 @@ export default function Home() {
         <aside className="left-rail" aria-label="Intelligence filters">
           <div className="panel">
             <div className="section-heading"><span>Signal coverage</span><strong>Monitored sources</strong></div>
-            {(sourceCounts.length ? sourceCounts.slice(0, 7).map(({ source, count }) => ({ item: portalSourceNames[source] ?? source, count: String(count) })) : [
-              { item: "buy.NSW", count: "Public" }, { item: "VendorPanel", count: "Public" },
-              { item: "AusTender", count: "Public" }, { item: "Australian Tenders", count: "Public" },
-              { item: "EstimateOne", count: "Metadata" }, { item: "TenderLink", count: "Metadata" }, { item: "BCI Central", count: "Metadata" },
-            ]).map(({ item, count }) => (
-              <label className="check-row" key={item}><input defaultChecked suppressHydrationWarning type="checkbox" /><span>{item}</span><small>{count}</small></label>
+            {(sourceCounts.length ? sourceCounts.slice(0, 7).map(({ source, count }) => ({ source, item: portalSourceNames[source] ?? source, count: String(count), url: portalSourceUrls[source] })) : [
+              { source: "buy-nsw", item: "buy.NSW", count: "Public", url: portalSourceUrls["buy-nsw"] },
+              { source: "vendorpanel", item: "VendorPanel", count: "Public", url: portalSourceUrls.vendorpanel },
+              { source: "austender", item: "AusTender", count: "Public", url: portalSourceUrls.austender },
+              { source: "australian-tenders", item: "Australian Tenders", count: "Public", url: portalSourceUrls["australian-tenders"] },
+              { source: "estimateone", item: "EstimateOne", count: "Metadata", url: portalSourceUrls.estimateone },
+              { source: "tenderlink", item: "TenderLink", count: "Metadata", url: portalSourceUrls.tenderlink },
+              { source: "bci-central", item: "BCI Central", count: "Metadata", url: portalSourceUrls["bci-central"] },
+            ]).map(({ source, item, count, url }) => (
+              <div className="source-row" key={source}>
+                <label className="source-toggle"><input aria-label={`Include ${item}`} defaultChecked suppressHydrationWarning type="checkbox" /><span>{item}</span></label>
+                <small>{count}</small>
+                {url && <a aria-label={`Open ${item} portal`} href={url} rel="noreferrer" target="_blank">Open <span aria-hidden="true">↗</span></a>}
+              </div>
             ))}
           </div>
           <div className="panel">
@@ -884,7 +902,7 @@ export default function Home() {
             <div className="detail-meta"><span>{active.id} <i>•</i> {active.opportunityType ?? "opportunity"}</span><b>{active.confidence}% confidence</b></div>
             <h3>{active.name}</h3>
             <p>{active.location} <i>•</i> {active.source} <i>•</i> last verified {active.lastVerified}</p>
-            {active.sourceUrl && <a href={active.sourceUrl} rel="noreferrer" target="_blank">Open public source ↗</a>}
+            {active.sourceUrl && <a className="source-portal-link" href={active.sourceUrl} rel="noreferrer" target="_blank">Open source portal <span aria-hidden="true">↗</span></a>}
           </div>
           <div className="detail-tabs" role="tablist" aria-label="Opportunity detail view">
             <button aria-selected={detailView === "intel"} className={detailView === "intel" ? "selected" : ""} onClick={() => setDetailView("intel")} role="tab" type="button">Intelligence</button>
