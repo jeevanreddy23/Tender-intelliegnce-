@@ -58,3 +58,5 @@ __pycache__/
 /*.egg-info/
 /.playwright-cli/
 /.playwright-mcp/
+/.codex-temp/
+/.pnpm-store/

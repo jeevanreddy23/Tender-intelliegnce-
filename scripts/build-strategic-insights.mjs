@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { createInterface } from "node:readline";
 import { buildStrategicInsightSnapshot } from "../lib/strategic-insights.js";
+import { buildWinLossValidationSummary } from "../lib/win-loss-validation.js";
 
 function parseArgs(argv) {
   const options = {
@@ -37,11 +38,14 @@ async function main() {
     readJson(options.manifest),
     readJson(options.quality),
   ]);
-  const snapshot = buildStrategicInsightSnapshot(records, {
-    generatedAt: manifest.generatedAt,
-    source: manifest.dataset,
-    coverage: quality.dateCoverage,
-  });
+  const snapshot = {
+    ...buildStrategicInsightSnapshot(records, {
+      generatedAt: manifest.generatedAt,
+      source: manifest.dataset,
+      coverage: quality.dateCoverage,
+    }),
+    winLossValidation: buildWinLossValidationSummary(records),
+  };
   await mkdir(dirname(options.output), { recursive: true });
   await writeFile(options.output, `${JSON.stringify(snapshot, null, 2)}\n`);
   console.log(`Strategic snapshot: ${snapshot.metrics.eligibleAwards} awards, ${snapshot.metrics.bundledAwards} bundled, ${snapshot.insights.length} evidence-backed insights.`);

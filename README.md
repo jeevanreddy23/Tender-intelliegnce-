@@ -9,6 +9,15 @@ It models how STS Geotechnics could monitor tenders, planning approvals,
 developer activity, consultants, builders, competitors, and proposal readiness
 in one daily operating view.
 
+## Agentic Development Harness
+
+All coding agents must begin with [`AGENTS.md`](AGENTS.md). Permanent product,
+architecture, data, security, UX, design, acceptance, and definition-of-done
+rules live under [`docs/`](docs/), with tender-specific behavioral contracts in
+[`docs/specs/`](docs/specs/). Development follows a bounded
+specification-to-evidence workflow rather than treating individual prompts as
+the complete specification.
+
 ## Reference Architecture
 
 ![STS tender intelligence reference architecture](docs/architecture.svg)
@@ -90,7 +99,10 @@ The production Worker is available at
 The data pipeline builds a provenance-first master dataset from Commonwealth
 AusTender awards and the NSW eTendering archive. Current buy NSW awards are
 ingested from official Notice Report CSV exports because the legacy public API
-was retired when the Register of notices replaced eTendering.
+was retired when the Register of notices replaced eTendering. The official
+[NSW eTendering API repository](https://github.com/NSW-eTendering/NSW-eTendering-API)
+is retained as a historical implementation and schema reference, not configured
+as a live collection endpoint.
 
 ```bash
 # Existing Commonwealth collector, resumable by publication day
@@ -167,11 +179,27 @@ to prevent future-data leakage.
 ## National Source Registry
 
 `config/procurement-portals.json` records the official Commonwealth, state, and
-territory portals plus VendorPanel. Only AusTender and buy NSW are marked as
-implemented. Other portals are explicitly marked adapter-required,
-manual-export-only, or legal-review-required even when an audited
-OpenContractAU mapping exists, so community coverage is visible without being
-mistaken for an operational SLA.
+territory portals plus VendorPanel. Only AusTender and the current buy NSW
+Notice Report importer are marked as implemented. The retired official NSW
+eTendering API repository is separately marked historical-reference-only so it
+cannot be mistaken for a current collector. Other portals are explicitly
+marked adapter-required, manual-export-only, or legal-review-required so
+coverage is never overstated and authenticated access is never bypassed. Where
+an audited OpenContractAU mapping exists, it is recorded as a gap-fill reference
+without being mistaken for an operational SLA or authoritative official feed.
+
+The first-build adapter contract covers buy NSW, VendorPanel, eProcure,
+TenderLink, EstimateOne, AusTender and ICN. It standardises source records,
+separates potential project leads from procurement opportunities, and links
+multiple signals through `parent_project_id`. See
+[`docs/source-adapters.md`](docs/source-adapters.md) for access boundaries,
+canonical identity rules and the ingestion-before-AI processing order.
+
+Cloudflare AI processing is implemented as an authenticated ingestion endpoint,
+deterministic prefilter, optional Queue consumer, DeepSeek V4 Flash JSON
+analysis, strict authoritative-field protection and D1 persistence. See
+[`docs/deepseek-cloudflare.md`](docs/deepseek-cloudflare.md) for secrets, queue,
+cron, migration and GitHub Actions setup.
 
 ## Estimator Feedback
 
@@ -200,6 +228,17 @@ signals:
   training-set background means
 - evidence thresholds and model-readiness gates that stop unsupported causal or
   win-probability claims
+- four-driver win/loss hypothesis generation with attributable-evidence gates
+  and model-agnostic NLI verdicts that remain explicitly non-causal; see
+  [`docs/specs/win-loss-validation.md`](docs/specs/win-loss-validation.md)
+- structured NLI premises that label tender, regulatory, STS, winner, and
+  constraint context; category fallbacks remain non-evidentiary, capability
+  claims require dates, and repeated neutral output creates review work rather
+  than autonomous collection or score changes
+- authenticated DeepSeek V4 strategy synthesis for verified NSW tenders above
+  AUD 500,000, gated on three `SUPPORTED` NLI findings above 90% and returned
+  as a strictly validated, human-reviewed four-part memo; see
+  [`docs/specs/strategy-synthesis.md`](docs/specs/strategy-synthesis.md)
 
 The generated dashboard snapshot lives at
 `app/data/strategic-insights.json`. Rebuild it after refreshing the historical

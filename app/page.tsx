@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import strategicSnapshot from "./data/strategic-insights.json";
+import { isActiveNswGeotechnicalTender } from "../lib/active-opportunity.js";
 import { buildPublicProfileQueries } from "../lib/contact-discovery.js";
 import { classifyGeotechTier } from "../lib/opportunity-intelligence.js";
 import { analyseScopeBundle } from "../lib/strategic-insights.js";
@@ -40,6 +41,7 @@ type Opportunity = {
   risks: { risk: string; response: string; level: "High" | "Medium" | "Low" }[];
   nextAction: string;
   sourceUrl?: string;
+  recordKind?: string;
   opportunityType?: OpportunityType;
   jurisdiction?: Jurisdiction;
   normalizedStage?: OpportunityStage;
@@ -52,7 +54,77 @@ type Agent = {
   output: string;
 };
 
-const opportunities: Opportunity[] = [
+type PortalRecord = {
+  opportunity_id: string;
+  source: string;
+  source_url: string;
+  title: string;
+  description?: string | null;
+  scope?: string | null;
+  buyer?: string | null;
+  agency?: string | null;
+  project_name?: string | null;
+  project_type?: string | null;
+  sector?: string | null;
+  address?: string | null;
+  suburb?: string | null;
+  state?: string | null;
+  closing_date?: string | null;
+  contract_value?: number | null;
+  estimated_value?: number | null;
+  procurement_type?: string | null;
+  status?: string | null;
+  categories?: string[];
+  deterministic_record_kind?: string | null;
+  deterministic_geotech_score?: number | null;
+  deterministic_geotech_tier?: "A" | "B" | "C" | null;
+  prefilter_score?: number | null;
+  ai_status?: string;
+  analysis?: {
+    geotech_relevance?: number;
+    services?: string[];
+    estimated_scope?: string | null;
+    recommended_action?: string;
+    confidence?: number;
+  } | null;
+  updated_at?: string;
+};
+
+type StrategyMemoSection = {
+  recommendation: string;
+  evidence_hypothesis_ids: string[];
+  checks_before_bid: string[];
+};
+
+type StrategyMemo = {
+  fleet_equipment: StrategyMemoSection;
+  pricing_packaging: StrategyMemoSection;
+  risk_mitigation: StrategyMemoSection;
+  competitor_counter: StrategyMemoSection;
+  limitations: string[];
+  human_review_required: true;
+  causal_claim_allowed: false;
+};
+
+type HistoricalEvidenceReference = {
+  excerpt: string;
+  sourceUrl: string;
+  page?: number | null;
+};
+
+type SupportedHistoricalFinding = {
+  recordId: string;
+  hypothesisId: string;
+  driver: string;
+  label: string;
+  statement: string;
+  verdict: "SUPPORTED";
+  confidence: number;
+  evidence: HistoricalEvidenceReference[];
+  causalClaimAllowed: false;
+};
+
+const demoOpportunities: Opportunity[] = [
   {
     id: "OP-2418",
     name: "Parramatta Civic Quarter towers",
@@ -352,7 +424,7 @@ const sourceUrlMap: Record<string, string> = {
   VendorPanel: "https://www.vendorpanel.com.au/",
 };
 
-const normalizedOpportunities: AustraliaOpportunity[] = opportunities.map((item) => ({
+const normalizedOpportunities: AustraliaOpportunity[] = demoOpportunities.map((item) => ({
   id: item.id,
   sourceName: item.source,
   sourceUrl: sourceUrlMap[item.source] ?? "https://www.nsw.gov.au/",
@@ -403,6 +475,117 @@ const workflow = [
   { step: "Secure consultant intelligence", owner: "J. Murray", due: "15 Jul", state: "Watching" },
   { step: "Price staged investigation", owner: "Bid team", due: "On trigger", state: "Blocked" },
 ];
+
+const portalSourceNames: Record<string, string> = {
+  "buy-nsw": "buy.NSW",
+  vendorpanel: "VendorPanel",
+  austender: "AusTender",
+  "australian-tenders": "Australian Tenders",
+  estimateone: "EstimateOne",
+  tenderlink: "TenderLink",
+  "bci-central": "BCI Central",
+};
+
+const portalSourceUrls: Record<string, string> = {
+  "buy-nsw": "https://buy.nsw.gov.au/",
+  vendorpanel: "https://www.vendorpanel.com.au/",
+  austender: "https://www.tenders.gov.au/",
+  "australian-tenders": "https://www.australiantenders.com.au/",
+  estimateone: "https://estimateone.com/",
+  tenderlink: "https://illion.tenderlink.com/",
+  "bci-central": "https://www.bcicentral.com/find-projects/",
+};
+
+function portalOpportunityType(value?: string | null): OpportunityType {
+  const type = String(value ?? "").toLowerCase();
+  if (type.includes("project pipeline")) return "project-pipeline";
+  if (type.includes("rfq") || type.includes("quotation")) return "quotation";
+  if (type.includes("eoi") || type.includes("expression of interest")) return "eoi";
+  if (type.includes("rfi") || type.includes("information")) return "rfi";
+  if (type.includes("rfp") || type.includes("proposal")) return "rfp";
+  if (type.includes("scheme")) return "scheme";
+  return "tender";
+}
+
+function portalJurisdiction(value?: string | null): Jurisdiction {
+  const state = String(value ?? "").toUpperCase();
+  if (["NSW", "VIC", "QLD", "WA", "SA", "TAS", "ACT", "NT"].includes(state)) return state as Jurisdiction;
+  if (/COMMONWEALTH|FEDERAL/.test(state)) return "Commonwealth";
+  return "Private";
+}
+
+function formatPortalDate(value?: string | null) {
+  if (!value) return "No closing date published";
+  const date = new Date(value);
+  if (Number.isNaN(date.valueOf())) return value;
+  return `Closes ${new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(date)}`;
+}
+
+function portalRecordToOpportunity(record: PortalRecord): Opportunity {
+  const relevance = Math.max(0, Math.min(100, Math.round(record.analysis?.geotech_relevance
+    ?? record.deterministic_geotech_score
+    ?? record.prefilter_score
+    ?? 0)));
+  const projectValue = Number(record.contract_value ?? record.estimated_value ?? 0) || 0;
+  const feeUpper = projectValue > 0
+    ? Math.max(20_000, Math.min(250_000, Math.round(projectValue * 0.001)))
+    : relevance >= 80 ? 80_000 : relevance >= 55 ? 45_000 : 20_000;
+  const services = Array.isArray(record.analysis?.services) ? record.analysis.services.map((item) => item.replaceAll("_", " ")) : [];
+  const categories = Array.isArray(record.categories) ? record.categories : [];
+  const scope = services.length ? services : categories.length ? categories : [record.scope ?? record.description ?? "Public listing metadata only"];
+  const state = portalJurisdiction(record.state);
+  const location = record.address ?? ([record.suburb, record.state].filter(Boolean).join(", ") || String(state));
+  const sourceName = portalSourceNames[record.source] ?? record.source;
+  const status = String(record.status ?? "").toLowerCase();
+  const stage = status === "planned" ? "Pre-tender notice" : status === "closed" || status === "awarded" ? "Closed" : "Tender open";
+  const updated = record.updated_at ? new Date(record.updated_at) : null;
+  const confidence = Math.max(35, Math.min(100, Math.round((record.analysis?.confidence ?? 0.7) * 100)));
+  return {
+    id: record.opportunity_id,
+    name: record.title,
+    stage,
+    source: sourceName,
+    sector: record.sector ?? categories[0] ?? record.project_type ?? "Public procurement",
+    state: String(state),
+    location,
+    client: record.buyer ?? record.agency ?? "Not publicly disclosed",
+    builder: "Not publicly disclosed",
+    consultant: "Not publicly disclosed",
+    owner: "Unassigned",
+    value: projectValue,
+    geotechRevenue: [Math.round(feeUpper * 0.6), feeUpper],
+    closeDate: formatPortalDate(record.closing_date),
+    constructionStart: "Not published",
+    relationship: 30,
+    competition: 50,
+    risk: 50,
+    strategic: relevance,
+    travel: state === "NSW" ? 85 : state === "Commonwealth" ? 70 : 55,
+    resourceFit: relevance,
+    confidence,
+    lastVerified: updated && !Number.isNaN(updated.valueOf())
+      ? new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(updated)
+      : "recently",
+    signals: [
+      `Deterministic geotechnical score ${relevance}`,
+      record.ai_status ? `AI status: ${record.ai_status}` : "Rules assessed",
+      record.procurement_type ? `Procurement type: ${record.procurement_type}` : "Public opportunity metadata",
+      record.buyer ? `Buyer: ${record.buyer}` : "Buyer restricted or not published",
+    ],
+    scope,
+    evidence: [{ title: "Public source listing", source: sourceName, age: "latest sync", confidence: record.analysis ? "AI reviewed" : "Rules assessed" }],
+    contacts: [],
+    risks: [{ risk: "Public metadata may omit subscription-only detail", response: "Open the source and confirm mandatory documents before bidding.", level: "Medium" }],
+    nextAction: record.analysis?.recommended_action
+      ? `Review the ${record.analysis.recommended_action.replaceAll("_", " ")} recommendation and confirm it against the source listing.`
+      : "Open the source listing and confirm scope, dates, and eligibility.",
+    sourceUrl: record.source_url,
+    recordKind: record.deterministic_record_kind ?? undefined,
+    opportunityType: portalOpportunityType(record.procurement_type),
+    jurisdiction: state,
+    normalizedStage: stage === "Tender open" ? "open" : stage === "Closed" ? "evaluation" : "pre-procurement",
+  };
+}
 
 function money(value: number) {
   return new Intl.NumberFormat("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }).format(value);
@@ -461,8 +644,12 @@ function scoreClass(score: number) {
 }
 
 export default function Home() {
-  const [activeId, setActiveId] = useState("OP-2422");
-  const [queueFilter, setQueueFilter] = useState<"Pursue" | "Watch" | "Archive">("Pursue");
+  const [activeId, setActiveId] = useState("");
+  const [opportunityItems, setOpportunityItems] = useState<Opportunity[]>([]);
+  const [feedTotal, setFeedTotal] = useState(0);
+  const [sourceCounts, setSourceCounts] = useState<{ source: string; count: number }[]>([]);
+  const [dataStatus, setDataStatus] = useState<"loading" | "live" | "fallback" | "error">("loading");
+  const [queueFilter, setQueueFilter] = useState<"All" | "Pursue" | "Watch" | "Archive">("All");
   const [stageFilter, setStageFilter] = useState("All");
   const [detailView, setDetailView] = useState<"intel" | "pursuit">("intel");
   const [briefOpen, setBriefOpen] = useState(false);
@@ -470,18 +657,85 @@ export default function Home() {
   const [feedbackChoice, setFeedbackChoice] = useState<"Pursue" | "Watch" | "Pass" | null>(null);
   const [passReason, setPassReason] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [strategyStatus, setStrategyStatus] = useState<"idle" | "generating" | "complete" | "error">("idle");
+  const [strategyMemo, setStrategyMemo] = useState<StrategyMemo | null>(null);
+  const [strategyError, setStrategyError] = useState("");
 
-  const ranked = useMemo(() => opportunities.map((opportunity) => {
+  useEffect(() => {
+    const controller = new AbortController();
+    async function loadLiveOpportunities() {
+      try {
+        type OpportunityFeed = {
+          total?: number;
+          records?: PortalRecord[];
+          sources?: { source: string; count: number }[];
+        };
+        const fetchPage = async (offset: number) => {
+          const response = await fetch(`/api/opportunities?limit=500&offset=${offset}`, { signal: controller.signal });
+          if (!response.ok) throw new Error(`Opportunity feed returned ${response.status}`);
+          return response.json() as Promise<OpportunityFeed>;
+        };
+        const firstPage = await fetchPage(0);
+        const total = Math.max(0, Number(firstPage.total) || 0);
+        const remainingOffsets = Array.from(
+          { length: Math.max(0, Math.ceil(total / 500) - 1) },
+          (_item, index) => (index + 1) * 500,
+        );
+        const remainingPages = await Promise.all(remainingOffsets.map(fetchPage));
+        const records = [firstPage, ...remainingPages].flatMap((page) => page.records ?? []);
+        const live = records.filter((record) => isActiveNswGeotechnicalTender(record)).map(portalRecordToOpportunity);
+        if (!live.length) {
+          setOpportunityItems([]);
+          setFeedTotal(total);
+          setSourceCounts(firstPage.sources ?? []);
+          setDataStatus("live");
+          return;
+        }
+        setOpportunityItems(live);
+        setActiveId(live[0].id);
+        setFeedTotal(total || live.length);
+        setSourceCounts(firstPage.sources ?? []);
+        setDataStatus("live");
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") return;
+        setOpportunityItems([]);
+        setFeedTotal(0);
+        setSourceCounts([]);
+        setDataStatus("error");
+      }
+    }
+    void loadLiveOpportunities();
+    return () => controller.abort();
+  }, []);
+
+  const ranked = useMemo(() => opportunityItems.map((opportunity) => {
     const assessment = scoreOpportunity(opportunity);
     return { ...opportunity, assessment, score: assessment.overall };
-  }).sort((a, b) => b.score - a.score), []);
+  }).sort((a, b) => b.score - a.score), [opportunityItems]);
   const stages = ["All", ...Array.from(new Set(ranked.map((item) => item.stage)))];
-  const queued = ranked.filter((item) => item.assessment.decisionQueue === queueFilter);
+  const queued = queueFilter === "All" ? ranked : ranked.filter((item) => item.assessment.decisionQueue === queueFilter);
   const visible = stageFilter === "All" ? queued : queued.filter((item) => item.stage === stageFilter);
   const active = ranked.find((item) => item.id === activeId) ?? ranked[0];
   const pursuitPipeline = ranked.filter((item) => item.assessment.decisionQueue === "Pursue").reduce((total, item) => total + item.geotechRevenue[1], 0);
   const early = ranked.filter((item) => !["Tender open", "Pre-tender notice"].includes(item.stage)).length;
   const highPriority = ranked.filter((item) => item.assessment.decisionQueue === "Pursue").length;
+
+  if (!active) {
+    return (
+      <main className="app-shell">
+        <section className="hero-band">
+          <nav className="topbar" aria-label="Primary">
+            <div className="brand-lockup"><span className="brand-mark" aria-hidden="true">STS</span><div><p className="eyebrow">GeoFlow opportunity intelligence</p><h1>NSW Opportunity Radar</h1></div></div>
+          </nav>
+          <div className="hero-grid">
+            <div className="hero-copy"><p className="kicker">NSW construction and professional services radar</p><h2>Active NSW tenders only.</h2><p>Expired tenders, New Zealand opportunities, and every other Australian state are excluded from this view.</p></div>
+            <div className="command-panel" aria-label="Feed status"><div><span>Live opportunities</span><strong>0</strong><small>{dataStatus === "loading" ? "Loading live NSW opportunities" : dataStatus === "error" ? "Live feed is temporarily unavailable" : "No active NSW opportunities found"}</small></div></div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   const tones = ["gold", "green", "ink", "blue", "red", "green", "blue", "gold", "ink", "green"];
   const drivers = scoringWeights.map((driver, index) => ({
     ...driver,
@@ -503,6 +757,19 @@ export default function Home() {
   });
   const snapshotDate = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(strategicSnapshot.generatedAt));
   const bundledBuyerSegment = strategicSnapshot.buyerSegments.find((segment) => segment.label === "Bundled program buyers");
+  const supportedHistoricalFindings = (strategicSnapshot.winLossValidation.topSupportedHypotheses as unknown as SupportedHistoricalFinding[])
+    .filter((finding) => finding.verdict === "SUPPORTED" && finding.causalClaimAllowed === false && Array.isArray(finding.evidence));
+  const supportedStrategyFindings = supportedHistoricalFindings
+    .filter((finding) => Number(finding.confidence) > 0.90)
+    .length;
+  const winDriverAutopsy = strategicSnapshot.winLossValidation.driverAutopsy;
+  const strategyBlockReason = active.recordKind !== "opportunity"
+    ? "A verified active tender is required; early leads are not sent to DeepSeek."
+    : active.value <= 500_000
+      ? "Contract value must be greater than AUD 500,000."
+      : supportedStrategyFindings < 3
+        ? `${supportedStrategyFindings} of 3 evidence-supported NLI findings above 90% confidence are ready.`
+        : null;
 
   async function submitFeedback(decision: "Pursue" | "Watch" | "Pass", reasonCategory?: string) {
     setFeedbackChoice(decision);
@@ -522,6 +789,30 @@ export default function Home() {
     setFeedbackStatus(response.ok ? "saved" : "error");
   }
 
+  async function generateStrategy() {
+    if (strategyBlockReason || strategyStatus === "generating") return;
+    setStrategyStatus("generating");
+    setStrategyMemo(null);
+    setStrategyError("");
+    try {
+      const response = await fetch("/api/strategy", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opportunityId: active.id }),
+      });
+      const payload = await response.json() as { memo?: StrategyMemo; error?: string; reasons?: { message?: string }[] };
+      if (!response.ok || !payload.memo) {
+        const reason = payload.reasons?.map(({ message }) => message).filter(Boolean).join(" ");
+        throw new Error(reason || payload.error || "Strategy generation failed.");
+      }
+      setStrategyMemo(payload.memo);
+      setStrategyStatus("complete");
+    } catch (error) {
+      setStrategyError(error instanceof Error ? error.message : "Strategy generation failed.");
+      setStrategyStatus("error");
+    }
+  }
+
   return (
     <main className="app-shell">
       <section className="hero-band">
@@ -530,7 +821,7 @@ export default function Home() {
             <span className="brand-mark" aria-hidden="true">STS</span>
             <div>
               <p className="eyebrow">GeoFlow opportunity intelligence</p>
-              <h1>Australia Opportunity Radar</h1>
+              <h1>NSW Opportunity Radar</h1>
             </div>
           </div>
           <div className="nav-actions">
@@ -546,11 +837,11 @@ export default function Home() {
         <div className="hero-grid">
           <div className="hero-copy">
             <p className="kicker">NSW construction and professional services radar</p>
-            <h2>Find Australian work before it becomes an obvious tender.</h2>
+            <h2>Find NSW geotechnical work before it becomes an obvious tender.</h2>
             <p>Link planning, funding, procurement, buyer, and contractor signals into one commercial project thread — then give each pursuit a next action.</p>
           </div>
           <div className="command-panel" aria-label="Today summary">
-            <div><span>Live opportunities</span><strong>{normalizedOpportunities.length}</strong><small>normalised records in the Australian demo slice</small></div>
+            <div><span>Live opportunities</span><strong>{feedTotal}</strong><small>{dataStatus === "live" ? `${opportunityItems.length} active NSW records loaded from D1` : "Loading live NSW opportunities"}</small></div>
             <div><span>Pursuit pipeline</span><strong>{shortMoney(pursuitPipeline)}</strong><small>upper fee range in the Pursue queue</small></div>
             <div><span>Early signal projects</span><strong>{early}</strong><small>before a formal tender appears</small></div>
             <div><span>Priority today</span><strong>{highPriority}</strong><small>auditable scores of 80 or above</small></div>
@@ -569,13 +860,25 @@ export default function Home() {
         <aside className="left-rail" aria-label="Intelligence filters">
           <div className="panel">
             <div className="section-heading"><span>Signal coverage</span><strong>Monitored sources</strong></div>
-            {["Government tenders", "Planning approvals", "Infrastructure pipelines", "Developer activity", "Private projects", "Relationship CRM"].map((item) => (
-              <label className="check-row" key={item}><input defaultChecked suppressHydrationWarning type="checkbox" /><span>{item}</span><small>Public</small></label>
+            {(sourceCounts.length ? sourceCounts.slice(0, 7).map(({ source, count }) => ({ source, item: portalSourceNames[source] ?? source, count: String(count), url: portalSourceUrls[source] })) : [
+              { source: "buy-nsw", item: "buy.NSW", count: "Public", url: portalSourceUrls["buy-nsw"] },
+              { source: "vendorpanel", item: "VendorPanel", count: "Public", url: portalSourceUrls.vendorpanel },
+              { source: "austender", item: "AusTender", count: "Public", url: portalSourceUrls.austender },
+              { source: "australian-tenders", item: "Australian Tenders", count: "Public", url: portalSourceUrls["australian-tenders"] },
+              { source: "estimateone", item: "EstimateOne", count: "Metadata", url: portalSourceUrls.estimateone },
+              { source: "tenderlink", item: "TenderLink", count: "Metadata", url: portalSourceUrls.tenderlink },
+              { source: "bci-central", item: "BCI Central", count: "Metadata", url: portalSourceUrls["bci-central"] },
+            ]).map(({ source, item, count, url }) => (
+              <div className="source-row" key={source}>
+                <label className="source-toggle"><input aria-label={`Include ${item}`} defaultChecked suppressHydrationWarning type="checkbox" /><span>{item}</span></label>
+                <small>{count}</small>
+                {url && <a aria-label={`Open ${item} portal`} href={url} rel="noreferrer" target="_blank">Open <span aria-hidden="true">↗</span></a>}
+              </div>
             ))}
           </div>
           <div className="panel">
             <div className="section-heading"><span>Commercial action</span><strong>Queue</strong></div>
-            <div className="stage-list">{(["Pursue", "Watch", "Archive"] as const).map((queue) => <button className={queue === queueFilter ? "active" : ""} key={queue} onClick={() => setQueueFilter(queue)} type="button">{queue}<span>{ranked.filter((item) => item.assessment.decisionQueue === queue).length}</span></button>)}</div>
+            <div className="stage-list">{(["All", "Pursue", "Watch", "Archive"] as const).map((queue) => <button className={queue === queueFilter ? "active" : ""} key={queue} onClick={() => setQueueFilter(queue)} type="button">{queue}<span>{queue === "All" ? ranked.length : ranked.filter((item) => item.assessment.decisionQueue === queue).length}</span></button>)}</div>
           </div>
           <div className="panel">
             <div className="section-heading"><span>Pipeline lens</span><strong>Stage</strong></div>
@@ -589,13 +892,13 @@ export default function Home() {
         <section className="opportunity-board" aria-label="Ranked opportunities">
           <div className="board-header">
             <div><p className="eyebrow">Decision queue</p><h3>{queueFilter} opportunities</h3><p className="board-description">Ten visible components separate geotechnical relevance from commercial fit, capability, readiness, relationships, and source quality.</p></div>
-            <span>{visible.length} shown</span>
+            <span>{visible.length} shown{feedTotal > opportunityItems.length ? ` of ${feedTotal}` : ""}</span>
           </div>
           <div className="queue-head"><span>Score</span><span>Opportunity</span><span>Value / timing</span></div>
           <div className="opportunity-list">
             {visible.length === 0 && <div className="queue-empty"><strong>No opportunities in this view</strong><span>Change the queue or stage filter to inspect other records.</span></div>}
             {visible.map((item) => (
-              <button className={`opportunity-row ${item.id === active.id ? "selected" : ""}`} key={item.id} onClick={() => { setActiveId(item.id); setDetailView("intel"); setFeedbackChoice(null); setFeedbackStatus("idle"); setPassReason(""); }} type="button">
+              <button className={`opportunity-row ${item.id === active.id ? "selected" : ""}`} key={item.id} onClick={() => { setActiveId(item.id); setDetailView("intel"); setFeedbackChoice(null); setFeedbackStatus("idle"); setPassReason(""); setStrategyStatus("idle"); setStrategyMemo(null); setStrategyError(""); }} type="button">
                 <span className={`score-pill ${scoreClass(item.score)}`}>{item.score}<small>score</small></span>
                 <span className="opportunity-main"><strong>{item.name}</strong><small>{item.location} <i>•</i> {item.stage} <i>•</i> {item.opportunityType ?? "project signal"}</small><em>{item.sector} <i>•</i> {item.source}</em></span>
                 <span className="revenue-range"><strong>{shortMoney(item.geotechRevenue[0])}-{shortMoney(item.geotechRevenue[1])}</strong><small>{item.closeDate}</small></span>
@@ -609,6 +912,7 @@ export default function Home() {
             <div className="detail-meta"><span>{active.id} <i>•</i> {active.opportunityType ?? "opportunity"}</span><b>{active.confidence}% confidence</b></div>
             <h3>{active.name}</h3>
             <p>{active.location} <i>•</i> {active.source} <i>•</i> last verified {active.lastVerified}</p>
+            {active.sourceUrl && <a className="source-portal-link" href={active.sourceUrl} rel="noreferrer" target="_blank">Open source portal <span aria-hidden="true">↗</span></a>}
           </div>
           <div className="detail-tabs" role="tablist" aria-label="Opportunity detail view">
             <button aria-selected={detailView === "intel"} className={detailView === "intel" ? "selected" : ""} onClick={() => setDetailView("intel")} role="tab" type="button">Intelligence</button>
@@ -672,7 +976,7 @@ export default function Home() {
 
       <section className="strategic-panel panel" aria-label="Historical procurement strategy">
         <div className="board-header">
-          <div><p className="eyebrow">Award pattern mining</p><h3>Strategic win drivers</h3><p className="board-description">Observed scope bundles, buyer concentration, and service associations from attributable Commonwealth and NSW award records.</p></div>
+          <div><p className="eyebrow">Award pattern mining</p><h3>Strategic evidence patterns</h3><p className="board-description">Observed scope bundles, buyer concentration, and service associations from attributable Commonwealth and NSW award records.</p></div>
           <span>Snapshot {snapshotDate}</span>
         </div>
         <div className="strategic-metrics">
@@ -699,6 +1003,79 @@ export default function Home() {
             <div className="model-gate"><span>Win model</span><b>Data gated</b><small>{strategicSnapshot.modelReadiness.reason}</small></div>
           </aside>
         </div>
+        <details className="driver-autopsy">
+          <summary>
+            <div><span className="eyebrow">Historical evidence review</span><strong>Win Driver Autopsy</strong><small>Evidence-gated NLI assessment · not a causal explanation</small></div>
+            <span className={`autopsy-status ${winDriverAutopsy.status === "REVIEW_AVAILABLE" ? "review" : "blocked"}`}>{winDriverAutopsy.supportedHistoricalFindings} supported historical findings</span>
+          </summary>
+          <div className="driver-autopsy-body">
+            <p className="autopsy-intro">Evidence-gated NLI tests whether recorded award evidence supports or contradicts a historical hypothesis. It does not prove why an award was made and cannot change the selected opportunity score.</p>
+            <div className="autopsy-metrics" aria-label="Historical validation status">
+              <div><span>Awards reviewed</span><strong>{strategicSnapshot.winLossValidation.recordsEvaluated}</strong></div>
+              <div><span>Hypotheses generated</span><strong>{strategicSnapshot.winLossValidation.hypothesesGenerated}</strong></div>
+              <div><span>Model calls</span><strong>{strategicSnapshot.winLossValidation.modelCallsCompleted}/{strategicSnapshot.winLossValidation.modelCallsAttempted}</strong></div>
+              <div><span>Insufficient evidence</span><strong>{strategicSnapshot.winLossValidation.verdictCounts.insufficientEvidence}</strong></div>
+            </div>
+            <div className="autopsy-driver-grid">
+              {winDriverAutopsy.drivers.map((driver) => (
+                <article className="autopsy-driver" key={driver.id}>
+                  <div><strong>{driver.label}</strong><span className={driver.state === "EVIDENCE_REQUIRED" ? "evidence-required" : driver.state === "SUPPORTED_FINDINGS" ? "supported" : driver.state === "CONTRADICTED_FINDINGS" ? "contradicted" : "ready"}>{driver.statusLabel}</span></div>
+                  <small>{driver.insufficientEvidence} insufficient evidence · {driver.readyForNli} ready for NLI</small>
+                  <p>{driver.reviewAction}</p>
+                </article>
+              ))}
+            </div>
+            {supportedHistoricalFindings.length ? (
+              <div className="autopsy-findings">
+                {supportedHistoricalFindings.slice(0, 3).map((finding) => (
+                  <article key={finding.hypothesisId}>
+                    <span>Supported historical finding</span>
+                    <strong>{finding.label}</strong>
+                    <p>Hypothesis tested: {finding.statement}</p>
+                    <small>NLI semantic confidence: {Math.round(finding.confidence * 100)}% · causal proof is not allowed</small>
+                    <div>{finding.evidence.map((item, index) => <a href={item.sourceUrl} key={`${finding.hypothesisId}-${index}`} rel="noreferrer" target="_blank">Evidence {index + 1}<span aria-hidden="true">↗</span></a>)}</div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="autopsy-empty"><strong>No supported historical findings are available.</strong><span>{strategicSnapshot.winLossValidation.reason}</span></div>
+            )}
+            <div className="source-note">{winDriverAutopsy.summary} Human evidence review is required; automatic collection, causal claims, and score mutation remain disabled.</div>
+          </div>
+        </details>
+        <section className={`strategy-synthesis ${strategyBlockReason ? "blocked" : "ready"}`} aria-label="Strategic Narrative" aria-live="polite">
+          <div className="strategy-synthesis-head">
+            <div><span className="eyebrow">The why and how</span><strong>Strategic Narrative</strong><p>DeepSeek converts the top three evidence-supported historical findings into a four-point memo for the selected tender.</p></div>
+            <button disabled={Boolean(strategyBlockReason) || strategyStatus === "generating"} onClick={() => void generateStrategy()} type="button">
+              {strategyStatus === "generating" ? "Generating strategy…" : "Generate DeepSeek strategy"}
+            </button>
+          </div>
+          <div className="strategy-gates">
+            <span>Value gate <b>{active.value > 500_000 ? "Ready" : "Blocked"}</b></span>
+            <span>NLI evidence <b>{supportedStrategyFindings}/3 ready</b></span>
+            <span>Decision <b>Human review required</b></span>
+          </div>
+          {strategyBlockReason && <p className="strategy-state"><strong>DeepSeek not called.</strong> {strategyBlockReason}</p>}
+          {strategyStatus === "error" && <p className="strategy-state error"><strong>Strategy unavailable.</strong> {strategyError}</p>}
+          {strategyMemo && (
+            <div className="strategy-memo">
+              {([
+                ["Fleet & equipment", strategyMemo.fleet_equipment],
+                ["Pricing & packaging", strategyMemo.pricing_packaging],
+                ["Risk mitigation", strategyMemo.risk_mitigation],
+                ["Competitor counter", strategyMemo.competitor_counter],
+              ] as const).map(([label, section]) => (
+                <article key={label}>
+                  <span>{label}</span>
+                  <strong>{section.recommendation}</strong>
+                  <ul>{section.checks_before_bid.map((check) => <li key={check}>{check}</li>)}</ul>
+                  <small>Evidence refs: {section.evidence_hypothesis_ids.join(", ")}</small>
+                </article>
+              ))}
+              <div className="strategy-limitations"><strong>Review limits</strong><ul>{strategyMemo.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul></div>
+            </div>
+          )}
+        </section>
         <div className="strategy-foot"><span>Source: {strategicSnapshot.source}</span><strong>Association is not causation · award share is not bidder win rate</strong></div>
       </section>
 

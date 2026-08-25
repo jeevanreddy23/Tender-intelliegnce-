@@ -9,19 +9,19 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return {
     metadataBase: siteUrl,
-    title: "Australia Opportunity Radar",
-    description: "Australia-focused opportunity intelligence linking early project signals, procurement pathways, and next commercial actions.",
+    title: "NSW Opportunity Radar",
+    description: "NSW geotechnical opportunity intelligence linking early project signals, procurement pathways, and next commercial actions.",
     openGraph: {
-      title: "Australia Opportunity Radar",
-      description: "Find Australian work before it becomes an obvious tender.",
+      title: "NSW Opportunity Radar",
+      description: "Find NSW geotechnical work before it becomes an obvious tender.",
       type: "website",
       url: siteUrl,
       images: [{ url: "/og.png", width: 1200, height: 630, alt: "STS Tender Intelligence opportunity dashboard" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "Australia Opportunity Radar",
-      description: "Find Australian work before it becomes an obvious tender.",
+      title: "NSW Opportunity Radar",
+      description: "Find NSW geotechnical work before it becomes an obvious tender.",
       images: ["/og.png"],
     },
     icons: {
