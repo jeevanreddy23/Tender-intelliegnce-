@@ -13,8 +13,11 @@ and tokens before adding new visual primitives.
 | `--ink` | Primary text |
 | `--muted` | Supporting text |
 | `--line` | Borders and dividers |
+| `--line-dark` | Strong dividers and outlined controls |
 | `--forest`, `--forest-2` | Brand and primary actions |
 | `--forest-deep` | Dark navigation, hero, and high-emphasis brand surfaces |
+| `--orange`, `--orange-soft` | Reference editorial accent, active navigation, and focus treatment |
+| `--orange-ink` | Accessible orange companion for small text on paper and panel surfaces |
 | `--green-bright` | Focus rings and dark-surface brand accents |
 | `--green-soft` | Selected, hover, and supporting green surfaces |
 | `--red`, `--red-dark` | Urgent/high-priority states |
@@ -22,8 +25,9 @@ and tokens before adding new visual primitives.
 | `--gold` | Caution or medium priority |
 | `--green` | Verified/success states |
 | `--shadow` | Standard elevation |
-| `--font-ui` | Readable system-first body and control typography |
-| `--font-display` | System-first headings and high-emphasis labels |
+| `--font-ui` | Geist body and control typography with a local fallback |
+| `--font-display` | Geist headings and high-emphasis labels |
+| `--font-mono` | Geist Mono source, status, and compact data labels |
 
 Do not introduce arbitrary colors, shadows, radii, font families, or spacing
 when these tokens or an existing component pattern apply. If a new token is
@@ -36,8 +40,9 @@ necessary, document its semantic role and use it consistently.
   patterns.
 - Primary actions use the established forest or gold treatment.
 - The primary application palette is dark evergreen, white, and neutral green.
-  Red, gold, and blue remain reserved for urgent, caution, and informational
-  status meaning rather than general decoration.
+  Warm paper and orange provide editorial hierarchy. Red, gold, and blue remain
+  reserved for urgent, caution, and informational status meaning rather than
+  general decoration.
 - Status treatments pair color with text.
 - Headings, labels, and metadata follow the existing typographic hierarchy.
 - Prefer progressive disclosure to adding more permanent panels or controls.
