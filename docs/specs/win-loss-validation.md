@@ -55,7 +55,9 @@ derived NLI analysis.
 Capability evidence for either STS or a competitor must include an observation
 date, an effective date or quarter, and an explicit flag that the source
 supports activity at the relevant tender date. Effective periods after the
-tender or award date are rejected. A current website statement cannot silently
+tender or award date are rejected. If the relevant tender or award date itself
+is missing or invalid, capability evidence is rejected rather than treated as
+historically verified. A current website statement cannot silently
 be treated as proof that an asset existed at the historical tender date.
 
 ## Structured premise contract
@@ -99,6 +101,36 @@ not bundle a transformer runtime into the Cloudflare Worker. It accepts at most
 40 evidence items per award, makes at most four fixed hypothesis calls, and
 applies a 30-second default per-call timeout. An approved offline or external
 adapter may be connected later without changing the evidence contract.
+
+Model monitoring distinguishes calls attempted, calls returning a valid
+normalized result, and calls that fail or return malformed output. A failed
+model attempt remains `INSUFFICIENT_EVIDENCE`, but it must not be reported as if
+the model was never called or as if evidence alone caused the block.
+
+## Historical evidence autopsy contract
+
+The historical detail experience may expose a sanitized four-hypothesis
+assessment for an awarded record. It contains verdict, semantic confidence,
+missing evidence, attributable evidence references, premise hash, prompt
+version, and explicit non-causal guardrails. It must not contain the full source
+text or present an active tender's opportunity score as a historical outcome.
+
+The dashboard may also show aggregate readiness by capability, evaluated price,
+evaluated relationship, and evaluated delivery timeline. This belongs in the
+Historical/Awards intelligence surface, not inside active opportunity cards.
+The disclosure must:
+
+- use `supported historical finding`, not `true win driver`;
+- show `Evidence required` when NLI did not run;
+- distinguish attempted, completed, and failed model calls;
+- keep `causalClaimAllowed` and `scoreMutationAllowed` false;
+- provide a human evidence-review action for every blocked driver; and
+- avoid repeating aggregate findings as though they apply to each live tender.
+
+Autonomous generation of the four hypotheses is permitted after an awarded
+record passes identity and lifecycle gates. Evidence collection, an NLI rerun,
+score changes, bid decisions, and external notifications remain explicit,
+reviewed actions.
 
 ## Current Phase 1 readiness result
 

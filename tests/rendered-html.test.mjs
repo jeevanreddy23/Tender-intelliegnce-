@@ -39,21 +39,38 @@ test("server-renders the NSW Opportunity Radar cockpit", async () => {
 });
 
 test("keeps starter-only code out of the product surface", async () => {
-  const [css, page, layout, packageJson] = await Promise.all([
+  const [css, page, layout, packageJson, strategicSnapshotSource] = await Promise.all([
     readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../package.json", import.meta.url), "utf8"),
+    readFile(new URL("../app/data/strategic-insights.json", import.meta.url), "utf8"),
   ]);
+  const strategicSnapshot = JSON.parse(strategicSnapshotSource);
 
   assert.match(packageJson, /"name": "sts-tender-intelligence"/);
   assert.doesNotMatch(packageJson, /react-loading-skeleton/);
   assert.match(page, /scoreOpportunity/);
   assert.match(page, /Decision queue/);
   assert.match(page, /Evidence and verification/);
+  assert.match(page, /Win Driver Autopsy/);
+  assert.match(page, /Evidence-gated NLI assessment · not a causal explanation/);
+  assert.doesNotMatch(page, /true win driver|why the winner won|caused the award/i);
   assert.match(layout, /title:\s*"NSW Opportunity Radar"/);
   assert.doesNotMatch(page, /_sites-preview|SkeletonPreview|codex-preview/);
   assert.doesNotMatch(layout, /_sites-preview|Starter Project|codex-preview/);
   assert.match(css, /--forest:/);
   assert.match(css, /@media\(max-width:860px\)/);
+  assert.match(css, /\.driver-autopsy summary\{[^}]*min-height:70px/);
+  assert.match(css, /summary:focus-visible/);
+  assert.equal(strategicSnapshot.winLossValidation.hypothesesGenerated, 564);
+  assert.equal(strategicSnapshot.winLossValidation.modelCallsAttempted, 0);
+  assert.equal(strategicSnapshot.winLossValidation.modelCallsCompleted, 0);
+  assert.equal(strategicSnapshot.winLossValidation.modelCallsFailed, 0);
+  assert.equal(strategicSnapshot.winLossValidation.verdictCounts.insufficientEvidence, 564);
+  assert.equal(strategicSnapshot.winLossValidation.driverAutopsy.drivers.length, 4);
+  assert.ok(strategicSnapshot.winLossValidation.driverAutopsy.drivers.every(({ state }) => state === "EVIDENCE_REQUIRED"));
+  assert.equal(strategicSnapshot.winLossValidation.driverAutopsy.causalClaimAllowed, false);
+  assert.equal(strategicSnapshot.winLossValidation.driverAutopsy.scoreMutationAllowed, false);
+  assert.equal(strategicSnapshot.winLossValidation.driverAutopsy.humanReviewRequired, true);
 });

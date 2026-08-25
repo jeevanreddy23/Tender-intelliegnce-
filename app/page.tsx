@@ -105,6 +105,24 @@ type StrategyMemo = {
   causal_claim_allowed: false;
 };
 
+type HistoricalEvidenceReference = {
+  excerpt: string;
+  sourceUrl: string;
+  page?: number | null;
+};
+
+type SupportedHistoricalFinding = {
+  recordId: string;
+  hypothesisId: string;
+  driver: string;
+  label: string;
+  statement: string;
+  verdict: "SUPPORTED";
+  confidence: number;
+  evidence: HistoricalEvidenceReference[];
+  causalClaimAllowed: false;
+};
+
 const demoOpportunities: Opportunity[] = [
   {
     id: "OP-2418",
@@ -750,9 +768,12 @@ export default function Home() {
   });
   const snapshotDate = new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(strategicSnapshot.generatedAt));
   const bundledBuyerSegment = strategicSnapshot.buyerSegments.find((segment) => segment.label === "Bundled program buyers");
-  const supportedStrategyFindings = (strategicSnapshot.winLossValidation.topSupportedHypotheses as { verdict: string; confidence: number }[])
-    .filter((finding) => finding.verdict === "SUPPORTED" && Number(finding.confidence) > 0.90)
+  const supportedHistoricalFindings = (strategicSnapshot.winLossValidation.topSupportedHypotheses as unknown as SupportedHistoricalFinding[])
+    .filter((finding) => finding.verdict === "SUPPORTED" && finding.causalClaimAllowed === false && Array.isArray(finding.evidence));
+  const supportedStrategyFindings = supportedHistoricalFindings
+    .filter((finding) => Number(finding.confidence) > 0.90)
     .length;
+  const winDriverAutopsy = strategicSnapshot.winLossValidation.driverAutopsy;
   const strategyBlockReason = active.recordKind !== "opportunity"
     ? "A verified active tender is required; early leads are not sent to DeepSeek."
     : active.value <= 500_000
@@ -993,6 +1014,46 @@ export default function Home() {
             <div className="model-gate"><span>Win model</span><b>Data gated</b><small>{strategicSnapshot.modelReadiness.reason}</small></div>
           </aside>
         </div>
+        <details className="driver-autopsy">
+          <summary>
+            <div><span className="eyebrow">Historical evidence review</span><strong>Win Driver Autopsy</strong><small>Evidence-gated NLI assessment · not a causal explanation</small></div>
+            <span className={`autopsy-status ${winDriverAutopsy.status === "REVIEW_AVAILABLE" ? "review" : "blocked"}`}>{winDriverAutopsy.supportedHistoricalFindings} supported historical findings</span>
+          </summary>
+          <div className="driver-autopsy-body">
+            <p className="autopsy-intro">Evidence-gated NLI tests whether recorded award evidence supports or contradicts a historical hypothesis. It does not prove why an award was made and cannot change the selected opportunity score.</p>
+            <div className="autopsy-metrics" aria-label="Historical validation status">
+              <div><span>Awards reviewed</span><strong>{strategicSnapshot.winLossValidation.recordsEvaluated}</strong></div>
+              <div><span>Hypotheses generated</span><strong>{strategicSnapshot.winLossValidation.hypothesesGenerated}</strong></div>
+              <div><span>Model calls</span><strong>{strategicSnapshot.winLossValidation.modelCallsCompleted}/{strategicSnapshot.winLossValidation.modelCallsAttempted}</strong></div>
+              <div><span>Insufficient evidence</span><strong>{strategicSnapshot.winLossValidation.verdictCounts.insufficientEvidence}</strong></div>
+            </div>
+            <div className="autopsy-driver-grid">
+              {winDriverAutopsy.drivers.map((driver) => (
+                <article className="autopsy-driver" key={driver.id}>
+                  <div><strong>{driver.label}</strong><span className={driver.state === "EVIDENCE_REQUIRED" ? "evidence-required" : driver.state === "SUPPORTED_FINDINGS" ? "supported" : driver.state === "CONTRADICTED_FINDINGS" ? "contradicted" : "ready"}>{driver.statusLabel}</span></div>
+                  <small>{driver.insufficientEvidence} insufficient evidence · {driver.readyForNli} ready for NLI</small>
+                  <p>{driver.reviewAction}</p>
+                </article>
+              ))}
+            </div>
+            {supportedHistoricalFindings.length ? (
+              <div className="autopsy-findings">
+                {supportedHistoricalFindings.slice(0, 3).map((finding) => (
+                  <article key={finding.hypothesisId}>
+                    <span>Supported historical finding</span>
+                    <strong>{finding.label}</strong>
+                    <p>Hypothesis tested: {finding.statement}</p>
+                    <small>NLI semantic confidence: {Math.round(finding.confidence * 100)}% · causal proof is not allowed</small>
+                    <div>{finding.evidence.map((item, index) => <a href={item.sourceUrl} key={`${finding.hypothesisId}-${index}`} rel="noreferrer" target="_blank">Evidence {index + 1}<span aria-hidden="true">↗</span></a>)}</div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="autopsy-empty"><strong>No supported historical findings are available.</strong><span>{strategicSnapshot.winLossValidation.reason}</span></div>
+            )}
+            <div className="source-note">{winDriverAutopsy.summary} Human evidence review is required; automatic collection, causal claims, and score mutation remain disabled.</div>
+          </div>
+        </details>
         <section className={`strategy-synthesis ${strategyBlockReason ? "blocked" : "ready"}`} aria-label="Strategic Narrative" aria-live="polite">
           <div className="strategy-synthesis-head">
             <div><span className="eyebrow">The why and how</span><strong>Strategic Narrative</strong><p>DeepSeek converts the top three evidence-supported historical findings into a four-point memo for the selected tender.</p></div>

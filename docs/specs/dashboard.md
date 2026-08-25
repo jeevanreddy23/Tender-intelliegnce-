@@ -15,6 +15,10 @@ Zealand, and project-only records are excluded by the backend.
 3. **Historical / Awards** — closed lifecycle and award intelligence.
 
 Each view has a distinct heading, empty state, count, and source metrics.
+Historical/Awards may include a progressive win-driver evidence autopsy with
+four fixed hypotheses. It must display semantic support, contradiction, or
+insufficient evidence without claiming causation, changing an active
+opportunity score, or repeating aggregate findings on live tender cards.
 
 ## Ordering
 

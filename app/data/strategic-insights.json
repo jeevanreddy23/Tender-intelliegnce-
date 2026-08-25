@@ -27,6 +27,9 @@
     "recordsEvaluated": 141,
     "hypothesesGenerated": 564,
     "nliEvaluationsRun": 0,
+    "modelCallsAttempted": 0,
+    "modelCallsCompleted": 0,
+    "modelCallsFailed": 0,
     "verdictCounts": {
       "supported": 0,
       "contradicted": 0,
@@ -61,6 +64,64 @@
         "contradicted": 0,
         "insufficientEvidence": 141
       }
+    },
+    "driverAutopsy": {
+      "status": "BLOCKED_BY_EVIDENCE",
+      "supportedHistoricalFindings": 0,
+      "summary": "No historical hypothesis is ready for semantic validation because attributable evaluation evidence is missing.",
+      "drivers": [
+        {
+          "id": "capability",
+          "label": "Capability fit",
+          "state": "EVIDENCE_REQUIRED",
+          "statusLabel": "Evidence required",
+          "hypotheses": 141,
+          "readyForNli": 0,
+          "supported": 0,
+          "contradicted": 0,
+          "insufficientEvidence": 141,
+          "reviewAction": "Attach dated winner capability evidence and the buyer's attributable selection rationale."
+        },
+        {
+          "id": "price",
+          "label": "Evaluated price",
+          "state": "EVIDENCE_REQUIRED",
+          "statusLabel": "Evidence required",
+          "hypotheses": 141,
+          "readyForNli": 0,
+          "supported": 0,
+          "contradicted": 0,
+          "insufficientEvidence": 141,
+          "reviewAction": "Attach the evaluated winning bid, a comparable conforming bid, and the buyer's selection rationale."
+        },
+        {
+          "id": "relationship",
+          "label": "Evaluated relationship advantage",
+          "state": "EVIDENCE_REQUIRED",
+          "statusLabel": "Evidence required",
+          "hypotheses": 141,
+          "readyForNli": 0,
+          "supported": 0,
+          "contradicted": 0,
+          "insufficientEvidence": 141,
+          "reviewAction": "Attach attributable prior-relationship evidence and confirmation that the buyer evaluated it."
+        },
+        {
+          "id": "timeline",
+          "label": "Evaluated delivery timeline",
+          "state": "EVIDENCE_REQUIRED",
+          "statusLabel": "Evidence required",
+          "hypotheses": 141,
+          "readyForNli": 0,
+          "supported": 0,
+          "contradicted": 0,
+          "insufficientEvidence": 141,
+          "reviewAction": "Attach the tender timeline, the winner's evaluated commitment, and the buyer's selection rationale."
+        }
+      ],
+      "causalClaimAllowed": false,
+      "scoreMutationAllowed": false,
+      "humanReviewRequired": true
     },
     "topSupportedHypotheses": [],
     "reason": "Award-only records lack the selection, comparative price, capability-at-award, relationship-evaluation, and delivery-evaluation evidence required for NLI.",

@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildWinLossPremise,
   buildPremiseEvidenceReviewPlan,
+  buildWinLossRecordAutopsy,
   buildWinLossValidationSummary,
   evaluateWinLossRecord,
   runWinLossNli,
@@ -17,6 +18,7 @@ const award = {
   agency: "Transport Agency",
   supplierName: "Example Geotechnics Pty Ltd",
   awardValue: 420000,
+  awardDate: "2025-12-15",
   awardUrl: "https://procurement.example/awards/AWARD-1",
 };
 
@@ -105,6 +107,28 @@ test("requires dated capability evidence and turns repeated neutral results into
   assert.equal(fourNeutral.scoreMutationAllowed, false);
 });
 
+test("blocks capability evidence when the relevant tender or award date is missing", async () => {
+  const sourceText = "The evaluation verified the supplier's specialist rig. The panel relied on that capability for the recorded scope.";
+  const evidenceItems = [
+    evidence("capability", "winner_capability", "The evaluation verified the supplier's specialist rig.", sourceText),
+    evidence("capability", "selection_rationale", "The panel relied on that capability for the recorded scope.", sourceText),
+  ];
+  let calls = 0;
+  const result = await runWinLossNli({ ...award, awardDate: null }, {
+    evidence: evidenceItems,
+    evaluateNli: async () => {
+      calls += 1;
+      return { entailment: 0.96, contradiction: 0.02, neutral: 0.02 };
+    },
+  });
+
+  assert.equal(calls, 0);
+  const capability = result.evaluations.find(({ driver }) => driver === "capability");
+  assert.equal(capability.readyForNli, false);
+  assert.equal(capability.verdict, WIN_LOSS_VERDICTS.INSUFFICIENT);
+  assert.ok(result.rejectedEvidence.some(({ reason }) => /valid relevant tender or award date/i.test(reason)));
+});
+
 test("blocks award-only hypotheses before an NLI model is called", async () => {
   let calls = 0;
   const result = await runWinLossNli(award, {
@@ -124,6 +148,13 @@ test("blocks award-only hypotheses before an NLI model is called", async () => {
   assert.equal(summary.hypothesesGenerated, 4);
   assert.equal(summary.verdictCounts.insufficientEvidence, 4);
   assert.equal(summary.nliEvaluationsRun, 0);
+  assert.equal(summary.modelCallsAttempted, 0);
+  assert.equal(summary.modelCallsCompleted, 0);
+  assert.equal(summary.modelCallsFailed, 0);
+  assert.equal(summary.driverAutopsy.drivers.length, 4);
+  assert.ok(summary.driverAutopsy.drivers.every(({ state }) => state === "EVIDENCE_REQUIRED"));
+  assert.equal(summary.driverAutopsy.scoreMutationAllowed, false);
+  assert.equal(summary.driverAutopsy.humanReviewRequired, true);
 });
 
 test("returns supported and contradicted only after evidence and NLI gates pass", async () => {
@@ -172,8 +203,28 @@ test("returns supported and contradicted only after evidence and NLI gates pass"
   assert.equal(summary.verdictCounts.supported, 1);
   assert.equal(summary.verdictCounts.contradicted, 1);
   assert.equal(summary.verdictCounts.insufficientEvidence, 2);
+  assert.equal(summary.modelCallsAttempted, 2);
+  assert.equal(summary.modelCallsCompleted, 2);
+  assert.equal(summary.modelCallsFailed, 0);
   assert.equal(summary.topSupportedHypotheses.length, 1);
+  assert.equal(summary.topSupportedHypotheses[0].recordId, "AWARD-1");
   assert.equal(summary.topSupportedHypotheses[0].causalClaimAllowed, false);
+
+  const autopsy = buildWinLossRecordAutopsy(award, {
+    evidence: evidenceItems,
+    nliResults: {
+      capability: { entailment: 0.94, contradiction: 0.03, neutral: 0.03, model: "test-nli" },
+      price: { entailment: 0.04, contradiction: 0.91, neutral: 0.05, model: "test-nli" },
+    },
+  });
+  assert.equal(autopsy.hypotheses.length, 4);
+  assert.deepEqual(autopsy.hypotheses.map(({ driver }) => driver), ["capability", "price", "relationship", "timeline"]);
+  assert.ok(autopsy.hypotheses.every(({ recordId }) => recordId === "AWARD-1"));
+  assert.equal(autopsy.scoreMutationAllowed, false);
+  assert.equal(autopsy.causalClaimAllowed, false);
+  assert.equal(autopsy.humanReviewRequired, true);
+  assert.doesNotMatch(JSON.stringify(autopsy), /sourceText/);
+  assert.doesNotMatch(JSON.stringify(autopsy), /\[TENDER_SCOPE\]/);
 });
 
 test("keeps low-separation NLI output insufficient even when evidence is complete", () => {
@@ -214,4 +265,14 @@ test("keeps neutral and failed model results insufficient", async () => {
   const failedCapability = failed.evaluations.find(({ driver }) => driver === "capability");
   assert.equal(failedCapability.verdict, WIN_LOSS_VERDICTS.INSUFFICIENT);
   assert.match(failedCapability.reason, /failed/i);
+
+  const failedSummary = buildWinLossValidationSummary([award], {
+    evidenceByRecord: { "AWARD-1": evidenceItems },
+    nliResultsByRecord: { "AWARD-1": { capability: { error: "model unavailable" } } },
+  });
+  assert.equal(failedSummary.status, "MODEL_FAILURE");
+  assert.equal(failedSummary.modelCallsAttempted, 1);
+  assert.equal(failedSummary.modelCallsCompleted, 0);
+  assert.equal(failedSummary.modelCallsFailed, 1);
+  assert.match(failedSummary.reason, /failed validation/i);
 });
