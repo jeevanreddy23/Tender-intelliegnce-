@@ -10,8 +10,8 @@
     "build": "vinext build",
     "start": "vinext start",
     "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy --name sts-tender-intelligence --keep-vars",
-    "deploy:check": "npm run build && wrangler deploy --name sts-tender-intelligence --keep-vars --dry-run",
+    "deploy": "npm run build && wrangler d1 migrations apply sts-tender-intelligence-db --remote --config dist/server/wrangler.json && wrangler deploy --config dist/server/wrangler.json --name sts-tender-intelligence --keep-vars",
+    "deploy:check": "npm run build && wrangler deploy --config dist/server/wrangler.json --name sts-tender-intelligence --keep-vars --dry-run",
     "cf:typegen": "wrangler types",
     "collect:austender": "node scripts/fetch-austender-awards.mjs",
     "build:austender-rag": "node scripts/build-austender-rag-corpus.mjs",
@@ -25,6 +25,7 @@
     "validate:historical-dataset": "node scripts/validate-historical-dataset.mjs",
     "test": "npm run build && node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {

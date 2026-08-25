@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Python dependencies
+        run: python -m pip install .
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build application
+        run: npm run build
+
+      - name: Test core intelligence
+        run: >-
+          node --test
+          tests/bid-decision.test.mjs
+          tests/contact-discovery.test.mjs
+          tests/historical-awards.test.mjs
+          tests/ml-dataset-schema.test.mjs
+          tests/opportunity-intelligence.test.mjs
+
+      - name: Test public portal collectors
+        run: node --test tests/public-portal-collectors.test.mjs
+
+      - name: Test source adapters
+        run: node --test tests/source-adapters.test.mjs
+
+      - name: Test source registry
+        run: node --test tests/source-registry.test.mjs
+
+      - name: Test product and AI pipeline
+        run: >-
+          node --test
+          tests/rendered-html.test.mjs
+          tests/strategy-synthesis.test.mjs
+          tests/strategic-insights.test.mjs
+          tests/tender-ai-pipeline.test.mjs
+          tests/win-loss-validation.test.mjs
+
+      - name: Test Python orchestration
+        run: python -m unittest discover -s python_tests -v
