@@ -49,7 +49,18 @@ jobs:
       - name: Build and test
         run: npm test
 
+      - name: Check Cloudflare deployment credentials
+        id: cloudflare
+        shell: bash
+        run: |
+          if [[ -n "$CLOUDFLARE_API_TOKEN" && -n "$CLOUDFLARE_ACCOUNT_ID" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Deploy with Wrangler
+        if: steps.cloudflare.outputs.ready == 'true'
         shell: bash
         run: |
           set -o pipefail
@@ -65,4 +76,14 @@ jobs:
             echo "- Git commit: \`$GITHUB_SHA\`"
             echo "- Cloudflare version: \`$version_id\`"
             echo "- Worker: \`sts-tender-intelligence\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Report credential-gated deployment
+        if: steps.cloudflare.outputs.ready != 'true'
+        shell: bash
+        run: |
+          {
+            echo "## Cloudflare deployment not attempted"
+            echo "The build and test suite passed, but the production environment is missing CLOUDFLARE_API_TOKEN or CLOUDFLARE_ACCOUNT_ID."
+            echo "The existing Cloudflare deployment remains unchanged."
           } >> "$GITHUB_STEP_SUMMARY"
