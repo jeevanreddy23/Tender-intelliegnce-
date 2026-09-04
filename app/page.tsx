@@ -7,7 +7,7 @@ import { isActiveNswGeotechnicalTender } from "../lib/active-opportunity.js";
 import { buildPublicProfileQueries } from "../lib/contact-discovery.js";
 import { classifyGeotechTier } from "../lib/opportunity-intelligence.js";
 import { analyseScopeBundle } from "../lib/strategic-insights.js";
-import type { AustraliaOpportunity, Jurisdiction, OpportunityStage, OpportunityType } from "../src/opportunity/schema";
+import type { Jurisdiction, OpportunityStage, OpportunityType } from "../src/opportunity/schema";
 import { scoreOpportunity as calculateOpportunityScore, scoringWeights } from "../src/opportunity/scoring";
 
 type Opportunity = {
@@ -124,6 +124,8 @@ type SupportedHistoricalFinding = {
   causalClaimAllowed: false;
 };
 
+// Reserved for an explicit offline/demo mode when the D1 feed is unavailable.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const demoOpportunities: Opportunity[] = [
   {
     id: "OP-2418",
@@ -396,62 +398,6 @@ const demoOpportunities: Opportunity[] = [
     nextAction: "Generate fixed-fee proposal with alternate schedule for simultaneous crews.",
   },
 ];
-
-const stageMap: Record<string, OpportunityStage> = {
-  "DA approved": "planning",
-  "Pre-tender notice": "pre-procurement",
-  "Land acquisition": "signal",
-  "EIS exhibition": "planning",
-  "Budget allocation": "funding",
-  "Tender open": "open",
-};
-
-const opportunityTypeMap: Record<string, OpportunityType> = {
-  "Council planning portal": "planning-application",
-  "Transport NSW pipeline": "project-pipeline",
-  "Property transaction monitor": "private-project",
-  "Major projects portal": "planning-application",
-  "Health infrastructure capital works": "project-pipeline",
-  VendorPanel: "tender",
-};
-
-const sourceUrlMap: Record<string, string> = {
-  "Council planning portal": "https://www.planningportal.nsw.gov.au/",
-  "Transport NSW pipeline": "https://www.transport.nsw.gov.au/projects",
-  "Property transaction monitor": "https://www.planningportal.nsw.gov.au/",
-  "Major projects portal": "https://www.planningportal.nsw.gov.au/major-projects",
-  "Health infrastructure capital works": "https://www.infrastructure.nsw.gov.au/",
-  VendorPanel: "https://www.vendorpanel.com.au/",
-};
-
-const normalizedOpportunities: AustraliaOpportunity[] = demoOpportunities.map((item) => ({
-  id: item.id,
-  sourceName: item.source,
-  sourceUrl: sourceUrlMap[item.source] ?? "https://www.nsw.gov.au/",
-  title: item.name,
-  description: `${item.name} is a ${item.sector.toLowerCase()} opportunity in ${item.location}.`,
-  opportunityType: opportunityTypeMap[item.source] ?? "private-project",
-  jurisdiction: item.state as Jurisdiction,
-  locations: [{ state: item.state, suburb: item.location.split(",")[0] }],
-  buyer: item.client,
-  principalContractor: item.builder === "TBA" ? undefined : item.builder,
-  sectors: [item.sector],
-  categories: item.scope.slice(0, 3),
-  keywords: item.signals,
-  expectedConstructionAt: item.constructionStart,
-  estimatedValueMin: item.value,
-  estimatedValueMax: item.value,
-  currency: "AUD",
-  stage: stageMap[item.stage] ?? "signal",
-  documents: item.evidence.map((evidence) => ({ title: evidence.title, url: sourceUrlMap[item.source] ?? "https://www.nsw.gov.au/" })),
-  provenance: {
-    fetchedAt: "2026-07-22T09:15:00+10:00",
-    extractionMethod: "manual",
-    confidence: item.confidence,
-    accessMethod: "public source snapshot",
-    termsChecked: true,
-  },
-}));
 
 const agents: Agent[] = [
   { name: "Tender crawler", status: "Live", coverage: "AusTender, VendorPanel, TenderLink, NSW Buy", output: "16 new tender signals" },
